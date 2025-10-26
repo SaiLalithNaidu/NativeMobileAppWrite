@@ -30,7 +30,6 @@ const Index = () => {
   };
 
   const FetchCompanies = async () => {
-    debugger; // Debugger will pause here
     try {
       console.log('Fetching companies...');
       console.log('DB ID:', process.env.EXPO_PUBLIC_APPWRITE_DB_ID);
@@ -40,17 +39,14 @@ const Index = () => {
         throw new Error('Database ID or Collection ID is not set in .env file');
       }
       
-      debugger; // Pause before API call
       const response = await databases.listDocuments(
         process.env.EXPO_PUBLIC_APPWRITE_DB_ID,
         process.env.EXPO_PUBLIC_APPWRITE_COMPANIES
       );
 
-      debugger; // Pause after API call to inspect response
       console.log("Companies fetched:", response.documents.length);
       return response.documents;
     } catch (error) {
-      debugger; // Pause on error
       console.error("Error fetching companies:", error);
       console.error("Error details:", error.message, error.code, error.type);
       throw error;
