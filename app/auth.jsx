@@ -74,9 +74,9 @@ export default function AuthScreen()
                 </TouchableOpacity>
 
                 <View style={styles.linkContainer}>
-                    <Text style={styles.linkText}>Don't have an account? </Text>
-                    <Link href="/signup" style={styles.link}>
-                        Sign Up
+                    <Text style={styles.linkText}>{"Don't have an account? "}</Text>
+                    <Link href="/signup" asChild>
+                        <Text style={styles.link}>Sign Up</Text>
                     </Link>
                 </View>
             </View>

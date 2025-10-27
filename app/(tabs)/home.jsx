@@ -1,12 +1,15 @@
+import { AntDesign } from '@expo/vector-icons';
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
   StyleSheet,
   Text,
-  View,
+  TextInput,
+  View
 } from "react-native";
 import { databases } from "../../lib/appwrite";
+import ImageCarousel from '../components/imageCarousel';
 
 const Index = () => {
   const [companies, setCompanies] = useState([]);
@@ -101,8 +104,18 @@ const Index = () => {
 
   return (
     <View style={styles.mainContainer}>
-      <Text style={styles.title}>Companies ({companies.length})</Text>
-
+        <View style={styles.imageContainer}>
+          <ImageCarousel/>
+        </View>
+        <View style={styles.searchContainer}>
+          <AntDesign name="CiSearch" size={20} color="#999" style={styles.searchIcon} />
+          <TextInput 
+            placeholder="Search..." 
+            style={styles.searchInput}
+            placeholderTextColor="#999"
+          />
+        </View>
+      <View style={styles.contentContainer}>
       <FlatList
         data={companies}
         keyExtractor={(item) => item.$id}
@@ -122,6 +135,7 @@ const Index = () => {
           <Text style={styles.emptyText}>No companies available</Text>
         }
       />
+      </View>
     </View>
   );
 };
@@ -135,8 +149,12 @@ const styles = StyleSheet.create({
   },
   mainContainer: {
     flex: 1,
-    padding: 20,
     backgroundColor: '#f5f5f5',
+    top: 10,
+  },
+  contentContainer: {
+    flex: 1,
+    paddingHorizontal: 20,
   },
   title: {
     fontSize: 24,
@@ -177,6 +195,39 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 10,
     color: "#555",
+  },
+  imageContainer:{
+    marginBottom: 16,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 45,
+    borderColor: '#ddd',
+    borderWidth: 1,
+    borderRadius: 15,
+    paddingHorizontal: 15,
+    marginBottom: 16,
+    marginHorizontal: 20,
+    backgroundColor: 'white',
+  },
+  searchIcon: {
+    marginRight: 10,
+  },
+  searchInput: {
+    flex: 1,
+    height: '100%',
+    fontSize: 16,
+  },
+  input:{
+    height: 45,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 15,
+    paddingHorizontal: 10,
+    marginBottom: 16,
+    backgroundColor: 'white',
+    marginHorizontal: 20,
   },
 });
 
