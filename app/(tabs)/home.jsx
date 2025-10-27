@@ -129,7 +129,7 @@ const Index = () => {
                 {item.description}
               </Text>
             )}
-          </View>
+          </View> 
         )}
         ListEmptyComponent={
           <Text style={styles.emptyText}>No companies available</Text>
