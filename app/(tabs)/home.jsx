@@ -1,11 +1,13 @@
-import { AntDesign } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Image,
   StyleSheet,
   Text,
   TextInput,
+  TouchableOpacity,
   View
 } from "react-native";
 import { databases } from "../../lib/appwrite";
@@ -14,6 +16,7 @@ import ImageCarousel from '../components/imageCarousel';
 const Index = () => {
   const [companies, setCompanies] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -56,13 +59,35 @@ const Index = () => {
     }
   };
 
+  const FetchProducts = async () => {
+    try {
+      const response = await databases.listDocuments(
+        process.env.EXPO_PUBLIC_APPWRITE_DB_ID,
+        process.env.EXPO_PUBLIC_APPWRITE_PRODUCTS
+      );
+
+      console.log("Products fetched:", response.documents.length);
+      return response.documents;
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      console.error("Error details:", error.message, error.code, error.type);
+      throw error;
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         const data = await FetchCompanies();
+        const categoriesData = await FetchCategories();
+        const productsData = await FetchProducts();
         setCompanies(data);
+        console.log('Categories data length:', categoriesData.length);
+        console.log('Products data length:', productsData.length);
         console.log('Companies data length:', data.length);
+        setCategories(categoriesData);
+        setProducts(productsData);
 
         if (data.length === 0) 
         {
@@ -108,7 +133,7 @@ const Index = () => {
           <ImageCarousel/>
         </View>
         <View style={styles.searchContainer}>
-          <AntDesign name="CiSearch" size={20} color="#999" style={styles.searchIcon} />
+          <FontAwesome5 name="search" style={styles.searchIcon} />
           <TextInput 
             placeholder="Search..." 
             style={styles.searchInput}
@@ -121,14 +146,26 @@ const Index = () => {
         keyExtractor={(item) => item.$id}
         renderItem={({ item }) => (
           <View style={styles.categoryItem}>
-            <Text style={styles.categoryName}>
-              {item.name || item.title || "Unnamed"}
-            </Text>
-            {item.description && (
-              <Text style={styles.categoryDescription}>
-                {item.description}
-              </Text>
+            {item.logoUrl && (
+              <Image 
+                source={{ uri: item.logoUrl }}
+                style={styles.companyLogo}
+                resizeMode="contain"
+              />
             )}
+            <View style={styles.categoryInfo}>
+              <Text style={styles.categoryName}>
+                {item.name || item.title || "Unnamed"}
+              </Text>
+              <View style={styles.categoryDescription}>
+                <Text>{item.name === 'Leo Aqua Laboratories' ? categories.length : 0} Categories</Text>
+                <Text>{item.name === 'Leo Aqua Laboratories' ? products.length : 0} Products</Text>
+              </View>
+              <TouchableOpacity style={styles.viewDetailsBtn}>
+                <Text style={styles.viewDetailsBtnText}>View Details</Text>
+              </TouchableOpacity>
+            </View>
+            
           </View> 
         )}
         ListEmptyComponent={
@@ -172,6 +209,14 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  companyLogo: {
+    width: 60,
+    height: 60,
+    marginRight: 12,
+    borderRadius: 8,
   },
   categoryName: {
     fontSize: 16,
@@ -229,6 +274,32 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     marginHorizontal: 20,
   },
+  searchIcon:{
+    size:15,
+    color:"rgba(66, 65, 65, 1)"
+  },
+  categoryDescription:{
+    display:"flex",
+    flexDirection:"row",
+    gap:10,
+  },
+  categoryInfo:{
+    display:"flex",
+    flexDirection:"column",
+    justifyContent:"space-around",
+    alignItems:"flex-start",
+  },
+  viewDetailsBtn:{
+    marginTop: 5,
+    height: 25,
+    backgroundColor: 'green',
+    borderRadius: 10,
+    paddingVertical: 2,
+    paddingHorizontal: 10,
+  },
+  viewDetailsBtnText:{
+    color: 'white',
+  }
 });
 
 export default Index;

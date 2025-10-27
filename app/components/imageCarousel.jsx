@@ -4,9 +4,9 @@ import { Dimensions, FlatList, Image, StyleSheet, View } from "react-native";
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 const images = [
-  { id: "1", uri: "https://backend.novonesis.com/sites/default/files/styles/large_1_1/public/image/2025-04/07_Aquaculture_half%26half_image_1080x1080_cattle_looking.jpg.webp?itok=oeVimOydhttps://www.shutterstock.com/image-photo/topdown-view-pile-raw-prawns-260nw-2654086545.jpg" },
+  { id: "1", uri: "https://backend.novonesis.com/sites/default/files/styles/xlarge_3_2/public/image/2025-04/07_Aquaculture_carousel_01_image_01_1920x1080_shrimp_farm.jpg.webp?itok=5BrGx5yw" },
   { id: "2", uri: "https://backend.novonesis.com/sites/default/files/styles/xlarge_3_2/public/image/2025-04/07_Aquaculture_carousel_02_image_01_1920x1080_shrimp_farm.jpg.webp?itok=WnO_eD92" },
-  { id: "3", uri: "https://backend.novonesis.com/sites/default/files/styles/xlarge_3_2/public/image/2025-04/07_Aquaculture_carousel_01_image_01_1920x1080_shrimp_farm.jpg.webp?itok=5BrGx5yw" },
+  { id: "3", uri: "https://backend.novonesis.com/sites/default/files/styles/large_1_1/public/image/2025-04/07_Aquaculture_half%26half_image_1080x1080_cattle_looking.jpg.webp?itok=oeVimOydhttps://www.shutterstock.com/image-photo/topdown-view-pile-raw-prawns-260nw-2654086545.jpg" },
 ];
 
 export default function ImageCarousel() {
