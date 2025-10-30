@@ -1,12 +1,16 @@
 import {
-  createUserWithEmailAndPassword,
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
-  signOut,
-  updateProfile
+    createUserWithEmailAndPassword,
+    onAuthStateChanged,
+    signInWithEmailAndPassword,
+    signOut,
+    updateProfile
 } from 'firebase/auth';
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { auth } from '../lib/firebase';
+import { auth } from '../api/firebase/config';
+
+// ============================================================================
+// AUTH CONTEXT
+// ============================================================================
 
 const AuthContext = createContext();
 
@@ -15,7 +19,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Check if user is already logged in on app start
+  // Monitor authentication state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
@@ -28,66 +32,96 @@ export function AuthProvider({ children }) {
       setLoading(false);
     });
 
-    // Cleanup subscription on unmount
     return () => unsubscribe();
   }, []);
 
+  /**
+   * Sign up a new user
+   * @param {string} email - User email
+   * @param {string} password - User password
+   * @param {string} name - User display name
+   * @returns {Promise<Object>} Result object with success status
+   */
   const signup = async (email, password, name) => {
     try {
-      // Create new account
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       
-      // Update display name
       await updateProfile(userCredential.user, {
         displayName: name
       });
 
-      // Get updated user
       const currentUser = auth.currentUser;
       setUser(currentUser);
       setIsAuthenticated(true);
 
+      console.log('[Auth] Signup successful:', currentUser.email);
       return { success: true, user: currentUser };
     } catch (error) {
-      console.error('Signup error:', error);
+      console.error('[Auth] Signup error:', error);
       return { success: false, error: error.message };
     }
   };
 
+  /**
+   * Sign in an existing user
+   * @param {string} email - User email
+   * @param {string} password - User password
+   * @returns {Promise<Object>} Result object with success status
+   */
   const login = async (email, password) => {
     try {
-      // Sign in with email and password
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
       setUser(userCredential.user);
       setIsAuthenticated(true);
 
+      console.log('[Auth] Login successful:', userCredential.user.email);
       return { success: true, user: userCredential.user };
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('[Auth] Login error:', error);
       return { success: false, error: error.message };
     }
   };
 
+  /**
+   * Sign out the current user
+   * @returns {Promise<Object>} Result object with success status
+   */
   const logout = async () => {
     try {
       await signOut(auth);
       setUser(null);
       setIsAuthenticated(false);
+
+      console.log('[Auth] Logout successful');
       return { success: true };
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('[Auth] Logout error:', error);
       return { success: false, error: error.message };
     }
   };
 
+  const value = {
+    isAuthenticated,
+    user,
+    login,
+    signup,
+    logout,
+    loading
+  };
+
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, login, signup, logout, loading }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
 }
 
+/**
+ * Hook to use authentication context
+ * @returns {Object} Auth context value
+ * @throws {Error} If used outside AuthProvider
+ */
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {

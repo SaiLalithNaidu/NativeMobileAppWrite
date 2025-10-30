@@ -1,13 +1,9 @@
-﻿import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Button, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { ID } from 'react-native-appwrite';
+﻿import { AntDesign } from '@expo/vector-icons';
+import { addDoc, collection, deleteDoc, doc, getDocs, query, where } from 'firebase/firestore';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Button, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Toast from 'react-native-toast-message';
-import { databases } from '../../lib/appwrite';
-
-const DATABASE_ID = process.env.EXPO_PUBLIC_APPWRITE_DB_ID;
-const COMPANIES_COL = process.env.EXPO_PUBLIC_APPWRITE_COMPANIES;
-const CATEGORIES_COL = process.env.EXPO_PUBLIC_APPWRITE_CATEGORIES;
-const PRODUCTS_COL = process.env.EXPO_PUBLIC_APPWRITE_PRODUCTS;
+import { db } from '../../lib/firebase';
 
 export default function AdminPanel() {
   const [companies, setCompanies] = useState([]);
@@ -27,6 +23,7 @@ export default function AdminPanel() {
     description: '',
     imageUrl: '',
     url: '',
+    productsCount: '',
   });
 
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
@@ -57,16 +54,20 @@ export default function AdminPanel() {
   const loadCompanies = async () => {
     try {
       setLoadingCompanies(true);
-      const response = await databases.listDocuments(
-        DATABASE_ID,
-        COMPANIES_COL
-      );
-      console.log('Companies loaded:', response.documents.map(c => ({ 
+      const companiesRef = collection(db, 'companies');
+      const snapshot = await getDocs(companiesRef);
+      
+      const companiesData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      
+      console.log('Companies loaded:', companiesData.map(c => ({ 
         name: c.name, 
-        $id: c.$id, 
+        id: c.id, 
         companyId: c.companyId 
       })));
-      setCompanies(response.documents);
+      setCompanies(companiesData);
     } catch (err) {
       console.error('Error loading companies:', err);
       Toast.show({
@@ -81,26 +82,18 @@ export default function AdminPanel() {
 
   const loadCategories = async (companyIdentifier) => {
     try {
-      const response = await databases.listDocuments(
-        DATABASE_ID,
-        CATEGORIES_COL
-      );
-      console.log('All categories:', response.documents);
-      console.log('Looking for company identifier:', companyIdentifier);
-      console.log('Type of identifier:', typeof companyIdentifier);
+      const categoriesRef = collection(db, 'categories');
+      const q = query(categoriesRef, where('companyId', '==', companyIdentifier));
+      const snapshot = await getDocs(q);
       
-      // Filter by companyId attribute
-      // The companyId in categories might be a custom string (like "company_leo_aqua") 
-      // or the Appwrite document $id
-      const filteredCategories = response.documents.filter(
-        (cat) => {
-          console.log('Category:', cat.title, 'companyId:', cat.companyId, 'Type:', typeof cat.companyId);
-          return cat.companyId === companyIdentifier;
-        }
-      );
-      console.log('Filtered categories count:', filteredCategories.length);
-      console.log('Filtered categories:', filteredCategories.map(c => ({ title: c.title, companyId: c.companyId })));
-      setCategories(filteredCategories);
+      const categoriesData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      
+      console.log('Filtered categories count:', categoriesData.length);
+      console.log('Filtered categories:', categoriesData.map(c => ({ title: c.title, companyId: c.companyId })));
+      setCategories(categoriesData);
     } catch (err) {
       console.error('Error loading categories:', err);
       Toast.show({
@@ -140,12 +133,8 @@ export default function AdminPanel() {
 
       console.log('Creating company with data:', companyData);
 
-      const doc = await databases.createDocument(
-        DATABASE_ID,
-        COMPANIES_COL,
-        ID.unique(),
-        companyData
-      );
+      const companiesRef = collection(db, 'companies');
+      await addDoc(companiesRef, companyData);
 
       Toast.show({
         type: 'success',
@@ -208,15 +197,14 @@ export default function AdminPanel() {
       if (category.url && category.url.trim()) {
         categoryData.url = category.url;
       }
+      if (category.productsCount && category.productsCount.trim()) {
+        categoryData.productsCount = parseInt(category.productsCount) || 0;
+      }
 
       console.log('Creating category with data:', categoryData);
 
-      const doc = await databases.createDocument(
-        DATABASE_ID,
-        CATEGORIES_COL,
-        ID.unique(),
-        categoryData
-      );
+      const categoriesRef = collection(db, 'categories');
+      await addDoc(categoriesRef, categoryData);
 
       Toast.show({
         type: 'success',
@@ -224,7 +212,7 @@ export default function AdminPanel() {
         text2: 'Category added successfully!',
       });
 
-      setCategory({ title: '', description: '', imageUrl: '', url: '' });
+      setCategory({ title: '', description: '', imageUrl: '', url: '', productsCount: '' });
       loadCategories(selectedCompanyId);
     } catch (err) {
       console.error('Full error:', err);
@@ -305,12 +293,8 @@ export default function AdminPanel() {
 
       console.log('Creating product with data:', productData);
 
-      await databases.createDocument(
-        DATABASE_ID,
-        PRODUCTS_COL,
-        ID.unique(),
-        productData
-      );
+      const productsRef = collection(db, 'products');
+      await addDoc(productsRef, productData);
 
       Toast.show({
         type: 'success',
@@ -335,52 +319,204 @@ export default function AdminPanel() {
     }
   };
 
+  // Delete functions
+  const handleDeleteCompany = async (companyId, companyName) => {
+    Alert.alert(
+      'Delete Company',
+      `Are you sure you want to delete "${companyName}"? This will also delete all associated categories and products.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              // Delete company
+              await deleteDoc(doc(db, 'companies', companyId));
+
+              // Delete all categories for this company
+              const companyIdentifier = companyId;
+              const categoriesSnapshot = await getDocs(
+                query(collection(db, 'categories'), where('companyId', '==', companyIdentifier))
+              );
+              const deleteCategories = categoriesSnapshot.docs.map(docSnap =>
+                deleteDoc(doc(db, 'categories', docSnap.id))
+              );
+
+              // Delete all products for this company
+              const productsSnapshot = await getDocs(
+                query(collection(db, 'products'), where('companyId', '==', companyIdentifier))
+              );
+              const deleteProducts = productsSnapshot.docs.map(docSnap =>
+                deleteDoc(doc(db, 'products', docSnap.id))
+              );
+
+              await Promise.all([...deleteCategories, ...deleteProducts]);
+
+              Toast.show({
+                type: 'success',
+                text1: 'Success',
+                text2: 'Company and all related data deleted!',
+              });
+
+              loadCompanies();
+              if (selectedCompanyId === companyIdentifier) {
+                setSelectedCompanyId(null);
+                setSelectedCompanyName('');
+                setCategories([]);
+              }
+            } catch (err) {
+              console.error('Error deleting company:', err);
+              Toast.show({
+                type: 'error',
+                text1: 'Error',
+                text2: err.message || 'Failed to delete company',
+              });
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDeleteCategory = async (categoryId, categoryTitle) => {
+    Alert.alert(
+      'Delete Category',
+      `Are you sure you want to delete "${categoryTitle}"? This will also delete all products in this category.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              // Delete category
+              await deleteDoc(doc(db, 'categories', categoryId));
+
+              // Delete all products in this category
+              const productsSnapshot = await getDocs(
+                query(collection(db, 'products'), where('categoryId', '==', categoryId))
+              );
+              const deleteProducts = productsSnapshot.docs.map(docSnap =>
+                deleteDoc(doc(db, 'products', docSnap.id))
+              );
+              await Promise.all(deleteProducts);
+
+              Toast.show({
+                type: 'success',
+                text1: 'Success',
+                text2: 'Category and products deleted!',
+              });
+
+              if (selectedCompanyId) {
+                loadCategories(selectedCompanyId);
+              }
+              if (selectedCategoryId === categoryId) {
+                setSelectedCategoryId(null);
+                setSelectedCategoryName('');
+              }
+            } catch (err) {
+              console.error('Error deleting category:', err);
+              Toast.show({
+                type: 'error',
+                text1: 'Error',
+                text2: err.message || 'Failed to delete category',
+              });
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDeleteProduct = async (productId, productTitle) => {
+    Alert.alert(
+      'Delete Product',
+      `Are you sure you want to delete "${productTitle}"?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteDoc(doc(db, 'products', productId));
+
+              Toast.show({
+                type: 'success',
+                text1: 'Success',
+                text2: 'Product deleted!',
+              });
+            } catch (err) {
+              console.error('Error deleting product:', err);
+              Toast.show({
+                type: 'error',
+                text1: 'Error',
+                text2: err.message || 'Failed to delete product',
+              });
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const renderCompanyItem = ({ item }) => {
-    // TEMPORARY FIX: Use custom companyId if it exists
-    // For Leo Aqua, use the legacy identifier that matches the categories
-    let companyIdentifier = item.companyId || item.$id;
-    
-    // Hardcoded fix for Leo Aqua company until database is updated
-    if (item.$id === "68fd1831003695c8a755" && !item.companyId) {
-      companyIdentifier = "company_leo_aqua";
-    }
+    // Use custom companyId if it exists, otherwise use Firebase document id
+    let companyIdentifier = item.companyId || item.id;
     
     return (
-      <TouchableOpacity
-        style={[
-          styles.listItem,
-          selectedCompanyId === companyIdentifier && styles.selectedItem
-        ]}
-        onPress={() => {
-          console.log('Using identifier:', companyIdentifier);
-          setSelectedCompanyId(companyIdentifier);
-          setSelectedCompanyName(item.name);
-        }}
-      >
-        <Text style={styles.listItemText}>{item.name}</Text>
-        {selectedCompanyId === companyIdentifier && (
-          <Text style={styles.checkmark}>✓</Text>
-        )}
-      </TouchableOpacity>
+      <View style={styles.listItemContainer}>
+        <TouchableOpacity
+          style={[
+            styles.listItem,
+            selectedCompanyId === companyIdentifier && styles.selectedItem
+          ]}
+          onPress={() => {
+            console.log('Using identifier:', companyIdentifier);
+            setSelectedCompanyId(companyIdentifier);
+            setSelectedCompanyName(item.name);
+          }}
+        >
+          <Text style={styles.listItemText}>{item.name}</Text>
+          {selectedCompanyId === companyIdentifier && (
+            <Text style={styles.checkmark}>✓</Text>
+          )}
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={() => handleDeleteCompany(item.id, item.name)}
+        >
+          <AntDesign name="delete" size={20} color="#ff4444" />
+        </TouchableOpacity>
+      </View>
     );
   };
 
   const renderCategoryItem = ({ item }) => (
-    <TouchableOpacity
-      style={[
-        styles.listItem,
-        selectedCategoryId === item.$id && styles.selectedItem
-      ]}
-      onPress={() => {
-        setSelectedCategoryId(item.$id);
-        setSelectedCategoryName(item.title);
-      }}
-    >
-      <Text style={styles.listItemText}>{item.title}</Text>
-      {selectedCategoryId === item.$id && (
-        <Text style={styles.checkmark}></Text>
-      )}
-    </TouchableOpacity>
+    <View style={styles.listItemContainer}>
+      <TouchableOpacity
+        style={[
+          styles.listItem,
+          selectedCategoryId === item.id && styles.selectedItem
+        ]}
+        onPress={() => {
+          setSelectedCategoryId(item.id);
+          setSelectedCategoryName(item.title);
+        }}
+      >
+        <Text style={styles.listItemText}>{item.title}</Text>
+        {selectedCategoryId === item.id && (
+          <Text style={styles.checkmark}>✓</Text>
+        )}
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.deleteButton}
+        onPress={() => handleDeleteCategory(item.id, item.title)}
+      >
+        <AntDesign name="delete" size={20} color="#ff4444" />
+      </TouchableOpacity>
+    </View>
   );
 
   return (
@@ -435,7 +571,7 @@ export default function AdminPanel() {
               nestedScrollEnabled={true}
             >
               {companies.map((item) => (
-                <View key={item.$id}>
+                <View key={item.id}>
                   {renderCompanyItem({ item })}
                 </View>
               ))}
@@ -485,6 +621,13 @@ export default function AdminPanel() {
           style={styles.input}
           editable={!!selectedCompanyId}
         />
+        <TextInput
+          placeholder="Products count"
+          value={category.productsCount}
+          onChangeText={(t) => setCategory({ ...category, productsCount: t })}
+          style={styles.input}
+          editable={!!selectedCompanyId}
+        />
         <Button 
           title="Add Category" 
           onPress={handleAddCategory} 
@@ -506,7 +649,7 @@ export default function AdminPanel() {
                   nestedScrollEnabled={true}
                 >
                   {categories.map((item) => (
-                    <View key={item.$id}>
+                    <View key={item.id}>
                       {renderCategoryItem({ item })}
                     </View>
                   ))}
@@ -642,14 +785,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e0e0e0',
   },
+  listItemContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
   listItem: {
+    flex: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 15,
     backgroundColor: 'white',
     borderRadius: 8,
-    marginBottom: 8,
     borderWidth: 1,
     borderColor: '#e0e0e0',
   },
@@ -667,6 +815,14 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: 'coral',
     fontWeight: 'bold',
+  },
+  deleteButton: {
+    marginLeft: 8,
+    padding: 10,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ff4444',
   },
   selectedBadge: {
     backgroundColor: '#d4edda',
