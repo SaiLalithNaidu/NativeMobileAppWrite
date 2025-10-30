@@ -1,5 +1,5 @@
 ﻿import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Button, FlatList, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Button, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { ID } from 'react-native-appwrite';
 import Toast from 'react-native-toast-message';
 import { databases } from '../../lib/appwrite';
@@ -61,6 +61,11 @@ export default function AdminPanel() {
         DATABASE_ID,
         COMPANIES_COL
       );
+      console.log('Companies loaded:', response.documents.map(c => ({ 
+        name: c.name, 
+        $id: c.$id, 
+        companyId: c.companyId 
+      })));
       setCompanies(response.documents);
     } catch (err) {
       console.error('Error loading companies:', err);
@@ -74,15 +79,27 @@ export default function AdminPanel() {
     }
   };
 
-  const loadCategories = async (companyId) => {
+  const loadCategories = async (companyIdentifier) => {
     try {
       const response = await databases.listDocuments(
         DATABASE_ID,
         CATEGORIES_COL
       );
+      console.log('All categories:', response.documents);
+      console.log('Looking for company identifier:', companyIdentifier);
+      console.log('Type of identifier:', typeof companyIdentifier);
+      
+      // Filter by companyId attribute
+      // The companyId in categories might be a custom string (like "company_leo_aqua") 
+      // or the Appwrite document $id
       const filteredCategories = response.documents.filter(
-        (cat) => cat.companyId === companyId
+        (cat) => {
+          console.log('Category:', cat.title, 'companyId:', cat.companyId, 'Type:', typeof cat.companyId);
+          return cat.companyId === companyIdentifier;
+        }
       );
+      console.log('Filtered categories count:', filteredCategories.length);
+      console.log('Filtered categories:', filteredCategories.map(c => ({ title: c.title, companyId: c.companyId })));
       setCategories(filteredCategories);
     } catch (err) {
       console.error('Error loading categories:', err);
@@ -105,11 +122,29 @@ export default function AdminPanel() {
     }
 
     try {
+      // Only send fields that exist in your Appwrite collection
+      const companyData = { 
+        name: company.name
+      };
+      
+      // Add optional fields only if they have values
+      if (company.description && company.description.trim()) {
+        companyData.description = company.description;
+      }
+      if (company.logoUrl && company.logoUrl.trim()) {
+        companyData.logoUrl = company.logoUrl;
+      }
+      if (company.websiteUrl && company.websiteUrl.trim()) {
+        companyData.websiteUrl = company.websiteUrl;
+      }
+
+      console.log('Creating company with data:', companyData);
+
       const doc = await databases.createDocument(
         DATABASE_ID,
         COMPANIES_COL,
         ID.unique(),
-        company
+        companyData
       );
 
       Toast.show({
@@ -121,7 +156,13 @@ export default function AdminPanel() {
       setCompany({ name: '', description: '', logoUrl: '', websiteUrl: '' });
       loadCompanies();
     } catch (err) {
-      console.error(err);
+      console.error('Full error:', err);
+      console.error('Error details:', {
+        message: err.message,
+        code: err.code,
+        type: err.type,
+        response: err.response
+      });
       Toast.show({
         type: 'error',
         text1: 'Error',
@@ -150,10 +191,25 @@ export default function AdminPanel() {
     }
 
     try {
+      // Only send fields that exist in your Appwrite collection
+      // Use companyId (camelCase) as shown in Appwrite screenshot
       const categoryData = { 
-        ...category, 
+        title: category.title,
         companyId: selectedCompanyId 
       };
+      
+      // Add optional fields only if they have values
+      if (category.description && category.description.trim()) {
+        categoryData.description = category.description;
+      }
+      if (category.imageUrl && category.imageUrl.trim()) {
+        categoryData.imageUrl = category.imageUrl;
+      }
+      if (category.url && category.url.trim()) {
+        categoryData.url = category.url;
+      }
+
+      console.log('Creating category with data:', categoryData);
 
       const doc = await databases.createDocument(
         DATABASE_ID,
@@ -171,7 +227,13 @@ export default function AdminPanel() {
       setCategory({ title: '', description: '', imageUrl: '', url: '' });
       loadCategories(selectedCompanyId);
     } catch (err) {
-      console.error(err);
+      console.error('Full error:', err);
+      console.error('Error details:', {
+        message: err.message,
+        code: err.code,
+        type: err.type,
+        response: err.response
+      });
       Toast.show({
         type: 'error',
         text1: 'Error',
@@ -218,13 +280,30 @@ export default function AdminPanel() {
     }
 
     try {
+      // Only send fields that exist in your Appwrite collection
+      // Use camelCase for consistency with Appwrite naming
       const productData = {
-        ...product,
+        title: product.title,
         categoryId: selectedCategoryId,
         companyId: selectedCompanyId,
         price: parseInt(product.price) || 0,
-        originalPrice: parseInt(product.originalPrice) || 0,
       };
+      
+      // Add optional fields only if they have values
+      if (product.description && product.description.trim()) {
+        productData.description = product.description;
+      }
+      if (product.imageUrl && product.imageUrl.trim()) {
+        productData.imageUrl = product.imageUrl;
+      }
+      if (product.url && product.url.trim()) {
+        productData.url = product.url;
+      }
+      if (product.originalPrice && product.originalPrice.trim()) {
+        productData.originalPrice = parseInt(product.originalPrice) || 0;
+      }
+
+      console.log('Creating product with data:', productData);
 
       await databases.createDocument(
         DATABASE_ID,
@@ -241,7 +320,13 @@ export default function AdminPanel() {
 
       setProduct({ title: '', description: '', imageUrl: '', url: '', price: '', originalPrice: '' });
     } catch (err) {
-      console.error(err);
+      console.error('Full error:', err);
+      console.error('Error details:', {
+        message: err.message,
+        code: err.code,
+        type: err.type,
+        response: err.response
+      });
       Toast.show({
         type: 'error',
         text1: 'Error',
@@ -250,23 +335,35 @@ export default function AdminPanel() {
     }
   };
 
-  const renderCompanyItem = ({ item }) => (
-    <TouchableOpacity
-      style={[
-        styles.listItem,
-        selectedCompanyId === item.$id && styles.selectedItem
-      ]}
-      onPress={() => {
-        setSelectedCompanyId(item.$id);
-        setSelectedCompanyName(item.name);
-      }}
-    >
-      <Text style={styles.listItemText}>{item.name}</Text>
-      {selectedCompanyId === item.$id && (
-        <Text style={styles.checkmark}></Text>
-      )}
-    </TouchableOpacity>
-  );
+  const renderCompanyItem = ({ item }) => {
+    // TEMPORARY FIX: Use custom companyId if it exists
+    // For Leo Aqua, use the legacy identifier that matches the categories
+    let companyIdentifier = item.companyId || item.$id;
+    
+    // Hardcoded fix for Leo Aqua company until database is updated
+    if (item.$id === "68fd1831003695c8a755" && !item.companyId) {
+      companyIdentifier = "company_leo_aqua";
+    }
+    
+    return (
+      <TouchableOpacity
+        style={[
+          styles.listItem,
+          selectedCompanyId === companyIdentifier && styles.selectedItem
+        ]}
+        onPress={() => {
+          console.log('Using identifier:', companyIdentifier);
+          setSelectedCompanyId(companyIdentifier);
+          setSelectedCompanyName(item.name);
+        }}
+      >
+        <Text style={styles.listItemText}>{item.name}</Text>
+        {selectedCompanyId === companyIdentifier && (
+          <Text style={styles.checkmark}>✓</Text>
+        )}
+      </TouchableOpacity>
+    );
+  };
 
   const renderCategoryItem = ({ item }) => (
     <TouchableOpacity
@@ -287,8 +384,17 @@ export default function AdminPanel() {
   );
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.sectionTitle}>🏢 Add Company</Text>
+    <KeyboardAvoidingView 
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+    >
+      <ScrollView 
+        style={styles.container}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Text style={styles.sectionTitle}>🏢 Add Company</Text>
       <TextInput
         placeholder="Company Name *"
         value={company.name}
@@ -323,12 +429,18 @@ export default function AdminPanel() {
         ) : companies.length === 0 ? (
           <Text style={styles.emptyText}>No companies yet. Add one above!</Text>
         ) : (
-          <FlatList
-            data={companies}
-            renderItem={renderCompanyItem}
-            keyExtractor={(item) => item.$id}
-            scrollEnabled={false}
-          />
+          <View style={styles.listContainer}>
+            <ScrollView 
+              style={styles.scrollableList}
+              nestedScrollEnabled={true}
+            >
+              {companies.map((item) => (
+                <View key={item.$id}>
+                  {renderCompanyItem({ item })}
+                </View>
+              ))}
+            </ScrollView>
+          </View>
         )}
       </View>
 
@@ -388,12 +500,18 @@ export default function AdminPanel() {
             {categories.length === 0 ? (
               <Text style={styles.emptyText}>No categories yet. Add one above!</Text>
             ) : (
-              <FlatList
-                data={categories}
-                renderItem={renderCategoryItem}
-                keyExtractor={(item) => item.$id}
-                scrollEnabled={false}
-              />
+              <View style={styles.listContainer}>
+                <ScrollView 
+                  style={styles.scrollableList}
+                  nestedScrollEnabled={true}
+                >
+                  {categories.map((item) => (
+                    <View key={item.$id}>
+                      {renderCategoryItem({ item })}
+                    </View>
+                  ))}
+                </ScrollView>
+              </View>
             )}
           </View>
         )}
@@ -474,16 +592,20 @@ export default function AdminPanel() {
         />
       </View>
 
-      <Toast />
-    </ScrollView>
+        <Toast />
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
     backgroundColor: '#f5f5f5',
+  },
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 40,
   },
   sectionTitle: {
     fontSize: 22,
@@ -572,5 +694,12 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     textAlign: 'center',
     padding: 20,
+  },
+  listContainer: {
+    maxHeight: 250,
+    marginTop: 10,
+  },
+  scrollableList: {
+    flexGrow: 0,
   },
 });
