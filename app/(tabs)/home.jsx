@@ -1,4 +1,5 @@
 import { FontAwesome5 } from '@expo/vector-icons';
+import { Link } from 'expo-router';
 import { collection, getDocs } from 'firebase/firestore';
 import React, { useEffect, useState } from "react";
 import {
@@ -12,6 +13,7 @@ import {
   View
 } from "react-native";
 import { db } from '../../lib/firebase';
+import CategoriesScreen from '../CategoriesScreen';
 import ImageCarousel from '../components/imageCarousel';
 
 // ============================================================================
@@ -25,7 +27,7 @@ const CompaniesScreen = ({ companies, onCompanySelect, getCategoryCount, getProd
       data={companies}
       keyExtractor={(item) => item.id}
       renderItem={({ item }) => (
-        <TouchableOpacity 
+        <Link href='/CategoriesScreen' 
           style={styles.categoryItem}
           onPress={() => onCompanySelect(item)}
         >
@@ -52,71 +54,10 @@ const CompaniesScreen = ({ companies, onCompanySelect, getCategoryCount, getProd
               <Text style={styles.viewDetailsBtnText}>View Categories →</Text>
             </View>
           </View>
-        </TouchableOpacity>
+        </Link>
       )}
       ListEmptyComponent={
         <Text style={styles.emptyText}>No companies available</Text>
-      }
-    />
-  );
-};
-
-// Categories List Screen
-const CategoriesScreen = ({ 
-  categories, 
-  selectedCompany, 
-  onCategorySelect, 
-  onBack 
-}) => {
-  return (
-    <FlatList
-      data={categories}
-      keyExtractor={(item) => item.id}
-      ListHeaderComponent={() => (
-        <View style={styles.headerContainer}>
-          <TouchableOpacity onPress={onBack} style={styles.backButton}>
-            <FontAwesome5 name="arrow-left" size={18} color="#333" />
-            <Text style={styles.backButtonText}>Back to Companies</Text>
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>
-            {selectedCompany?.name} - Categories
-          </Text>
-          <Text style={styles.headerSubtitle}>
-            {categories.length} categories found
-          </Text>
-        </View>
-      )}
-      renderItem={({ item }) => (
-        <TouchableOpacity 
-          style={styles.categoryItem}
-          onPress={() => onCategorySelect(item)}
-        >
-          {item.imageUrl && (
-            <Image 
-              source={{ uri: item.imageUrl }}
-              style={styles.companyLogo}
-              resizeMode="cover"
-            />
-          )}
-          <View style={styles.categoryInfo}>
-            <Text style={styles.categoryName}>
-              {item.title || "Unnamed Category"}
-            </Text>
-            {item.description && (
-              <Text style={styles.descriptionText} numberOfLines={2}>
-                {item.description}
-              </Text>
-            )}
-            <View style={styles.viewDetailsBtn}>
-              <Text style={styles.viewDetailsBtnText}>View Products →</Text>
-            </View>
-          </View>
-        </TouchableOpacity>
-      )}
-      ListEmptyComponent={
-        <Text style={styles.emptyText}>
-          No categories found for this company
-        </Text>
       }
     />
   );
@@ -469,22 +410,27 @@ const Index = () => {
 
   return (
     <View style={styles.mainContainer}>
-      {/* Image Carousel */}
-      <View style={styles.imageContainer}>
-        <ImageCarousel />
-      </View>
+      {/* Show Carousel and Search only on Companies view */}
+      {view === 'companies' && (
+        <>
+          {/* Image Carousel */}
+          <View style={styles.imageContainer}>
+            <ImageCarousel />
+          </View>
 
-      {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <FontAwesome5 name="search" size={20} color="#999" style={styles.searchIcon} />
-        <TextInput 
-          placeholder="Search products..." 
-          style={styles.searchInput}
-          placeholderTextColor="#999"
-          value={searchQuery}
-          onChangeText={handleSearch}
-        />
-      </View>
+          {/* Search Bar */}
+          <View style={styles.searchContainer}>
+            <FontAwesome5 name="search" size={20} color="#999" style={styles.searchIcon} />
+            <TextInput 
+              placeholder="Search products..." 
+              style={styles.searchInput}
+              placeholderTextColor="#999"
+              value={searchQuery}
+              onChangeText={handleSearch}
+            />
+          </View>
+        </>
+      )}
 
       {/* Dynamic Content Area */}
       <View style={styles.contentContainer}>
@@ -694,6 +640,80 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#999',
     textDecorationLine: 'line-through',
+  },
+  // Categories Grid Styles
+  categoriesContainer: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  categoriesHeader: {
+    backgroundColor: 'white',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    paddingTop: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  categoriesTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 8,
+  },
+  categoriesSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 4,
+  },
+  gridContainer: {
+    paddingHorizontal: 5,
+    paddingVertical: 15,
+    paddingBottom: 20,
+  },
+  gridRow: {
+    justifyContent: 'space-between',
+    marginBottom: 15,
+    paddingHorizontal: 5,
+  },
+  categoryCard: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    width: '48%',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  categoryCardImage: {
+    width: '100%',
+    height: 140,
+    backgroundColor: '#f0f0f0',
+  },
+  placeholderImage: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  categoryCardInfo: {
+    padding: 12,
+  },
+  categoryCardTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+    minHeight: 36,
+  },
+  productCountText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 60,
   },
 });
 

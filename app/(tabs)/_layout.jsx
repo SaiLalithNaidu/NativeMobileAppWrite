@@ -25,7 +25,7 @@ export default function TabsLayout() {
                 </TouchableOpacity>
               </View>
             ), }} />
-        <Tabs.Screen name="categories" options={{ title: "Categories", tabBarIcon:({color})=><FontAwesome5 name="th-list" size={18} color={color} /> }} />
+        <Tabs.Screen name="search" options={{ title: "Search", tabBarIcon:({color})=><FontAwesome5 name="search" size={18} color={color} /> }} />
         <Tabs.Screen name="cart" options={{ title: "Cart", tabBarIcon:({color})=><FontAwesome5 name="shopping-cart" size={18} color={color} /> }} />
         <Tabs.Screen name="profile" options={{ title: "Profile", tabBarIcon:({color})=><FontAwesome5 name="user" size={18} color={color} /> }} />
         <Tabs.Screen name="adminPanel" options={{ title: "Admin Panel", tabBarIcon:({color})=><FontAwesome5 name="tools" size={18} color={color} /> }} />
