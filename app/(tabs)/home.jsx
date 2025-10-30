@@ -222,11 +222,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
-  categoryDescription: {
-    fontSize: 14,
-    color: "#555",
-    marginTop: 4,
-  },
+  // categoryDescription: {
+  //   fontSize: 14,
+  //   color: "#555",
+  //   marginTop: 4,
+  // },
   emptyText: {
     color: "#666",
     marginTop: 20,
@@ -255,9 +255,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     marginHorizontal: 20,
     backgroundColor: 'white',
-  },
-  searchIcon: {
-    marginRight: 10,
   },
   searchInput: {
     flex: 1,
