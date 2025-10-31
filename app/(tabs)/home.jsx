@@ -1,5 +1,4 @@
-import { FontAwesome5 } from '@expo/vector-icons';
-import { Link } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { collection, getDocs } from 'firebase/firestore';
 import React, { useEffect, useState } from "react";
 import {
@@ -8,12 +7,10 @@ import {
   Image,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View
 } from "react-native";
 import { db } from '../../lib/firebase';
-import CategoriesScreen from '../CategoriesScreen';
 import ImageCarousel from '../components/imageCarousel';
 
 // ============================================================================
@@ -27,9 +24,10 @@ const CompaniesScreen = ({ companies, onCompanySelect, getCategoryCount, getProd
       data={companies}
       keyExtractor={(item) => item.id}
       renderItem={({ item }) => (
-        <Link href='/CategoriesScreen' 
+        <TouchableOpacity 
           style={styles.categoryItem}
           onPress={() => onCompanySelect(item)}
+          activeOpacity={0.7}
         >
           {item.logoUrl && (
             <Image 
@@ -54,7 +52,7 @@ const CompaniesScreen = ({ companies, onCompanySelect, getCategoryCount, getProd
               <Text style={styles.viewDetailsBtnText}>View Categories →</Text>
             </View>
           </View>
-        </Link>
+        </TouchableOpacity>
       )}
       ListEmptyComponent={
         <Text style={styles.emptyText}>No companies available</Text>
@@ -63,101 +61,21 @@ const CompaniesScreen = ({ companies, onCompanySelect, getCategoryCount, getProd
   );
 };
 
-// Products List Screen
-const ProductsScreen = ({ 
-  products, 
-  selectedCompany, 
-  selectedCategory, 
-  searchQuery,
-  onBack 
-}) => {
-  return (
-    <FlatList
-      data={products}
-      keyExtractor={(item) => item.id}
-      ListHeaderComponent={() => (
-        <View style={styles.headerContainer}>
-          <TouchableOpacity onPress={onBack} style={styles.backButton}>
-            <FontAwesome5 name="arrow-left" size={18} color="#333" />
-            <Text style={styles.backButtonText}>
-              {searchQuery ? 'Back to Companies' : 'Back to Categories'}
-            </Text>
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>
-            {searchQuery 
-              ? `Search Results for "${searchQuery}"`
-              : selectedCategory 
-                ? `${selectedCategory.title} - Products`
-                : `${selectedCompany?.name} - All Products`
-            }
-          </Text>
-          <Text style={styles.headerSubtitle}>
-            {products.length} products found
-          </Text>
-        </View>
-      )}
-      renderItem={({ item }) => (
-        <View style={styles.productItem}>
-          {item.imageUrl && (
-            <Image 
-              source={{ uri: item.imageUrl }}
-              style={styles.productImage}
-              resizeMode="cover"
-            />
-          )}
-          <View style={styles.productInfo}>
-            <Text style={styles.productName}>
-              {item.title || "Unnamed Product"}
-            </Text>
-            {item.description && (
-              <Text style={styles.descriptionText} numberOfLines={3}>
-                {item.description}
-              </Text>
-            )}
-            <View style={styles.priceContainer}>
-              {item.originalPrice && (
-                <Text style={styles.originalPrice}>
-                  ₹{item.originalPrice}
-                </Text>
-              )}
-              <Text style={styles.price}>
-                ₹{item.price || 0}
-              </Text>
-            </View>
-          </View>
-        </View>
-      )}
-      ListEmptyComponent={
-        <Text style={styles.emptyText}>
-          {searchQuery 
-            ? `No products found for "${searchQuery}"`
-            : selectedCategory
-              ? "No products in this category"
-              : "No products found"
-          }
-        </Text>
-      }
-    />
-  );
-};
+
 
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 
 const Index = () => {
+  const router = useRouter();
+  
   // State Management
   const [companies, setCompanies] = useState([]);
   const [allCategories, setAllCategories] = useState([]);
   const [allProducts, setAllProducts] = useState([]);
-  const [filteredCategories, setFilteredCategories] = useState([]);
-  const [filteredProducts, setFilteredProducts] = useState([]);
-  const [selectedCompany, setSelectedCompany] = useState(null);
-  const [selectedCategory, setSelectedCategory] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [view, setView] = useState('companies'); // 'companies', 'categories', 'products', 'search'
 
   // ============================================================================
   // DATA FETCHING FUNCTIONS
@@ -265,83 +183,18 @@ const Index = () => {
   // ============================================================================
 
   const handleCompanySelect = (company) => {
-    const companyIdentifier = getCompanyIdentifier(company);
+    console.log('🏢 Navigating to categories for:', company.name);
     
-    // Filter categories for this company
-    const companyCategories = allCategories.filter(
-      cat => cat.companyId === companyIdentifier
-    );
-    
-    setSelectedCompany(company);
-    setSelectedCategory(null);
-    setFilteredCategories(companyCategories);
-    setView('categories');
-    
-    console.log(`✓ Selected: ${company.name} | ${companyCategories.length} categories`);
+    // Navigate to full-screen categories page (PhonePe style)
+    router.push({
+      pathname: '/categories',
+      params: {
+        company: JSON.stringify(company)
+      }
+    });
   };
 
-  const handleCategorySelect = (category) => {
-    const companyIdentifier = getCompanyIdentifier(selectedCompany);
-    
-    // Filter products for this category
-    const categoryProducts = allProducts.filter(
-      prod => prod.categoryId === category.id && prod.companyId === companyIdentifier
-    );
-    
-    setSelectedCategory(category);
-    setFilteredProducts(categoryProducts);
-    setView('products');
-    
-    console.log(`✓ Selected: ${category.title} | ${categoryProducts.length} products`);
-  };
-
-  const handleSearch = (text) => {
-    setSearchQuery(text);
-    
-    if (!text.trim()) {
-      // Clear search - reset to companies view
-      resetToCompanies();
-      return;
-    }
-
-    const searchLower = text.toLowerCase();
-    
-    // Search in products
-    const matchedProducts = allProducts.filter(prod =>
-      prod.title?.toLowerCase().includes(searchLower) ||
-      prod.description?.toLowerCase().includes(searchLower)
-    );
-    
-    setFilteredProducts(matchedProducts);
-    setView('products');
-    
-    console.log(`🔍 Search: "${text}" | ${matchedProducts.length} products found`);
-  };
-
-  const handleBack = () => {
-    if (searchQuery) {
-      // If searching, go back to companies and clear search
-      resetToCompanies();
-    } else if (view === 'products' && selectedCategory) {
-      // From category products -> back to categories
-      setSelectedCategory(null);
-      setView('categories');
-    } else if (view === 'categories') {
-      // From categories -> back to companies
-      resetToCompanies();
-    }
-  };
-
-  const resetToCompanies = () => {
-    setView('companies');
-    setSelectedCompany(null);
-    setSelectedCategory(null);
-    setFilteredCategories([]);
-    setFilteredProducts([]);
-    setSearchQuery("");
-  };
-
-  // ============================================================================
+    // ============================================================================
   // LOADING & ERROR STATES
   // ============================================================================
 
@@ -363,78 +216,24 @@ const Index = () => {
   }
 
   // ============================================================================
-  // RENDER CONTENT
-  // ============================================================================
-
-  const renderScreen = () => {
-    switch (view) {
-      case 'companies':
-        return (
-          <CompaniesScreen 
-            companies={companies}
-            onCompanySelect={handleCompanySelect}
-            getCategoryCount={getCategoryCount}
-            getProductCount={getProductCount}
-          />
-        );
-
-      case 'categories':
-        return (
-          <CategoriesScreen 
-            categories={filteredCategories}
-            selectedCompany={selectedCompany}
-            onCategorySelect={handleCategorySelect}
-            onBack={handleBack}
-          />
-        );
-
-      case 'products':
-        return (
-          <ProductsScreen 
-            products={filteredProducts}
-            selectedCompany={selectedCompany}
-            selectedCategory={selectedCategory}
-            searchQuery={searchQuery}
-            onBack={handleBack}
-          />
-        );
-
-      default:
-        return null;
-    }
-  };
-
-  // ============================================================================
   // MAIN RENDER
   // ============================================================================
 
   return (
     <View style={styles.mainContainer}>
-      {/* Show Carousel and Search only on Companies view */}
-      {view === 'companies' && (
-        <>
-          {/* Image Carousel */}
-          <View style={styles.imageContainer}>
-            <ImageCarousel />
-          </View>
+      {/* Image Carousel */}
+      <View style={styles.imageContainer}>
+        <ImageCarousel />
+      </View>
 
-          {/* Search Bar */}
-          <View style={styles.searchContainer}>
-            <FontAwesome5 name="search" size={20} color="#999" style={styles.searchIcon} />
-            <TextInput 
-              placeholder="Search products..." 
-              style={styles.searchInput}
-              placeholderTextColor="#999"
-              value={searchQuery}
-              onChangeText={handleSearch}
-            />
-          </View>
-        </>
-      )}
-
-      {/* Dynamic Content Area */}
+      {/* Companies List */}
       <View style={styles.contentContainer}>
-        {renderScreen()}
+        <CompaniesScreen 
+          companies={companies}
+          onCompanySelect={handleCompanySelect}
+          getCategoryCount={getCategoryCount}
+          getProductCount={getProductCount}
+        />
       </View>
     </View>
   );
