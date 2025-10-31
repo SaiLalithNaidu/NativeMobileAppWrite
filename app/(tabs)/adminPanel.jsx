@@ -1,13 +1,14 @@
 ﻿import { AntDesign } from '@expo/vector-icons';
 import { addDoc, collection, deleteDoc, doc, getDocs, query, where } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Button, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { db } from '../../lib/firebase';
 
 export default function AdminPanel() {
   const [companies, setCompanies] = useState([]);
   const [loadingCompanies, setLoadingCompanies] = useState(true);
+  const [btnloading, setBtnLoading] = useState(false);
   const [company, setCompany] = useState({
     name: '',
     description: '',
@@ -202,6 +203,7 @@ export default function AdminPanel() {
       }
 
       console.log('Creating category with data:', categoryData);
+      setBtnLoading(true);
 
       const categoriesRef = collection(db, 'categories');
       await addDoc(categoriesRef, categoryData);
@@ -211,6 +213,7 @@ export default function AdminPanel() {
         text1: 'Success',
         text2: 'Category added successfully!',
       });
+      setBtnLoading(false);
 
       setCategory({ title: '', description: '', imageUrl: '', url: '', productsCount: '' });
       loadCategories(selectedCompanyId);
@@ -556,7 +559,10 @@ export default function AdminPanel() {
         onChangeText={(t) => setCompany({ ...company, websiteUrl: t })}
         style={styles.input}
       />
-      <Button title="Add Company" onPress={handleAddCompany} color="coral" />
+      <TouchableOpacity style={styles.button} onPress={handleAddCompany}>
+        <Text style={styles.buttonText}>{btnloading ? <ActivityIndicator color="white" />
+                    : "Add Company"}</Text>
+      </TouchableOpacity>
 
       <View style={styles.separator}>
         <Text style={styles.sectionTitle}>📋 Existing Companies</Text>
@@ -628,12 +634,14 @@ export default function AdminPanel() {
           style={styles.input}
           editable={!!selectedCompanyId}
         />
-        <Button 
-          title="Add Category" 
-          onPress={handleAddCategory} 
-          color="coral"
-          disabled={!selectedCompanyId}
-        />
+        <TouchableOpacity 
+          style={[styles.button, (!selectedCompanyId || btnloading) && styles.buttonDisabled]} 
+          onPress={handleAddCategory}
+          disabled={!selectedCompanyId || btnloading}
+        >
+          <Text style={styles.buttonText}>{btnloading ? <ActivityIndicator color="white" />
+                    : "Add Category"}</Text>
+        </TouchableOpacity>
 
         {selectedCompanyId && (
           <View style={styles.subSection}>
@@ -727,12 +735,14 @@ export default function AdminPanel() {
           style={styles.input}
           editable={!!selectedCategoryId}
         />
-        <Button 
-          title="Add Product" 
-          onPress={handleAddProduct} 
-          color="coral"
+        <TouchableOpacity 
+          style={[styles.button, !selectedCategoryId && styles.buttonDisabled]} 
+          onPress={handleAddProduct}
           disabled={!selectedCategoryId}
-        />
+        >
+          <Text style={styles.buttonText}>{btnloading ? <ActivityIndicator color="white" />
+                    : "Add Product"}</Text>
+        </TouchableOpacity>
       </View>
 
         <Toast />
@@ -858,4 +868,17 @@ const styles = StyleSheet.create({
   scrollableList: {
     flexGrow: 0,
   },
+  button: {
+        backgroundColor: 'coral',
+        height: 50,
+        borderRadius: 8,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 8,
+        color: 'white',
+    },
+    buttonText: {
+        color: 'white',
+        fontSize: 18,
+    },
 });
