@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { db } from '../../lib/firebase';
+import AlertCard from '../components/AlertCard';
 
 export default function AdminPanel() {
   const [companies, setCompanies] = useState([]);
@@ -37,6 +38,31 @@ export default function AdminPanel() {
     price: '',
     originalPrice: '',
   });
+
+  // Centralized custom alert state (for AlertCard)
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertData, setAlertData] = useState({
+    type: 'success',
+    title: '',
+    message: '',
+    buttonText: 'Continue',
+    onPress: null,
+  });
+
+  const showAlert = (type, title, message, buttonText = 'Continue', onPress) => {
+    setAlertData({ type, title, message, buttonText, onPress: onPress || null });
+    setAlertVisible(true);
+  };
+
+  const handleAlertPress = () => {
+    try {
+      if (typeof alertData.onPress === 'function') {
+        alertData.onPress();
+      }
+    } finally {
+      setAlertVisible(false);
+    }
+  };
 
   useEffect(() => {
     loadCompanies();
@@ -405,11 +431,8 @@ export default function AdminPanel() {
               );
               await Promise.all(deleteProducts);
 
-              Toast.show({
-                type: 'success',
-                text1: 'Success',
-                text2: 'Category and products deleted!',
-              });
+              // Use custom AlertCard for success feedback
+              showAlert('success', 'Success', 'Category and all products deleted!');
 
               if (selectedCompanyId) {
                 loadCategories(selectedCompanyId);
@@ -419,12 +442,8 @@ export default function AdminPanel() {
                 setSelectedCategoryName('');
               }
             } catch (err) {
-              console.error('Error deleting category:', err);
-              Toast.show({
-                type: 'error',
-                text1: 'Error',
-                text2: err.message || 'Failed to delete category',
-              });
+              // Use custom AlertCard for error feedback
+              showAlert('error', 'Error', err.message || 'Failed to delete category');
             }
           },
         },
@@ -450,13 +469,14 @@ export default function AdminPanel() {
                 text1: 'Success',
                 text2: 'Product deleted!',
               });
+
+              // Use custom AlertCard for success feedback
+              showAlert('success', 'Success', 'Product deleted!');
+              
             } catch (err) {
               console.error('Error deleting product:', err);
-              Toast.show({
-                type: 'error',
-                text1: 'Error',
-                text2: err.message || 'Failed to delete product',
-              });
+              // Use custom AlertCard for error feedback
+              showAlert('error', 'Error', err.message || 'Failed to delete product');
             }
           },
         },
@@ -747,6 +767,19 @@ export default function AdminPanel() {
 
         <Toast />
       </ScrollView>
+
+      {/* Custom Alert overlay above everything */}
+      {alertVisible && (
+        <View style={styles.alertOverlay}>
+          <AlertCard
+            type={alertData.type}
+            title={alertData.title}
+            message={alertData.message}
+            buttonText={alertData.buttonText}
+            onPress={handleAlertPress}
+          />
+        </View>
+      )}
     </KeyboardAvoidingView>
   );
 }
@@ -880,5 +913,18 @@ const styles = StyleSheet.create({
     buttonText: {
         color: 'white',
         fontSize: 18,
+    },
+    // Full-screen overlay for AlertCard
+    alertOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.45)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 999,
+      elevation: 999,
     },
 });
