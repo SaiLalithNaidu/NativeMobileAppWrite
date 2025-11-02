@@ -3,13 +3,13 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    FlatList,
-    Image,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  FlatList,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { db } from '../lib/firebase';
 
@@ -58,13 +58,17 @@ const CategoriesScreen = () => {
   };
 
   const handleCategoryPress = (category) => {
-    router.push({
-      pathname: '/products',
-      params: {
-        company: JSON.stringify(company),
-        category: JSON.stringify(category)
-      }
+    const companyId = company.companyId || company.id;
+    console.log('✅ Navigating to Products from Categories:', {
+      companyId,
+      companyName: company.name,
+      categoryId: category.id,
+      categoryName: category.title
     });
+    
+    router.push(
+      `/products?companyId=${companyId}&companyName=${encodeURIComponent(company.name)}&categoryId=${category.id}&categoryName=${encodeURIComponent(category.title)}`
+    );
   };
 
   const renderCategoryCard = ({ item }) => (

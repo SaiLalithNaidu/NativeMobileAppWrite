@@ -8,11 +8,12 @@ import {
   Image,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View
 } from 'react-native';
 import { db } from '../lib/firebase';
 
-const ProductsScreen = () => {
+const AdminProductsScreen = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
   
@@ -23,7 +24,7 @@ const ProductsScreen = () => {
   const { companyId, companyName, categoryId, categoryName } = params;
 
   useEffect(() => {
-    console.log('🚀 Products Screen Mounted - Params:', { companyId, companyName, categoryId, categoryName });
+    console.log('🚀 Admin Products Screen Mounted - Params:', { companyId, companyName, categoryId, categoryName });
     
     if (companyId && categoryId) {
       fetchProducts();
@@ -55,7 +56,7 @@ const ProductsScreen = () => {
         ...doc.data()
       }));
       
-      console.log('✅ Products loaded:', productsData.length);
+      console.log('✅ Admin Products loaded:', productsData.length);
       setProducts(productsData);
     } catch (error) {
       console.error('❌ Error fetching products:', error);
@@ -64,7 +65,19 @@ const ProductsScreen = () => {
     }
   };
 
-  const renderProductItem = ({ item }) => (
+  const handleEditProduct = (product) => {
+    // Navigate back to admin panel with product data
+    router.push({
+      pathname: '/(tabs)/adminPanel',
+      params: {
+        editProduct: JSON.stringify(product),
+        companyId: companyId,
+        categoryId: categoryId
+      }
+    });
+  };
+
+  const renderProductItemGrid = ({ item }) => (
     <View style={styles.gridItem}>
       {item.imageUrl ? (
         <Image 
@@ -92,6 +105,13 @@ const ProductsScreen = () => {
           )}
           <Text style={styles.gridPrice}>₹{item.price || 0}</Text>
         </View>
+        <TouchableOpacity 
+          style={styles.gridEditButton}
+          onPress={() => handleEditProduct(item)}
+        >
+          <FontAwesome5 name="edit" size={14} color="white" />
+          <Text style={styles.gridEditButtonText}>Edit</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -105,6 +125,7 @@ const ProductsScreen = () => {
             headerTitle: categoryName && categoryName !== 'undefined' ? categoryName : 'Products',
             headerTitleStyle: { fontSize: 18, fontWeight: 'bold' },
             headerBackTitle: 'Back',
+            headerStyle: { backgroundColor: '#f8f9fa' },
           }} 
         />
         <View style={styles.loadingContainer}>
@@ -123,31 +144,41 @@ const ProductsScreen = () => {
           headerTitle: categoryName && categoryName !== 'undefined' ? categoryName : 'Products',
           headerTitleStyle: { fontSize: 18, fontWeight: 'bold' },
           headerBackTitle: 'Back',
+          headerStyle: { backgroundColor: '#f8f9fa' },
         }} 
       />
       <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.headerContainer}>
-          {companyName && (
-            <Text style={styles.companyName}>{companyName}</Text>
-          )}
-          <Text style={styles.subtitle}>
-            {products.length} products available
-          </Text>
+        {/* Admin Header */}
+        <View style={styles.adminHeader}>
+          <View style={styles.headerInfo}>
+            <View style={styles.adminBadge}>
+              <FontAwesome5 name="shield-alt" size={14} color="#fff" />
+              <Text style={styles.adminBadgeText}>ADMIN VIEW</Text>
+            </View>
+            {companyName && (
+              <Text style={styles.companyNameSmall}>{companyName}</Text>
+            )}
+            <Text style={styles.subtitleSmall}>
+              {products.length} products • Category: {categoryName || 'N/A'}
+            </Text>
+          </View>
         </View>
 
         <FlatList
           data={products}
           keyExtractor={(item) => item.id}
-          renderItem={renderProductItem}
+          renderItem={renderProductItemGrid}
           numColumns={2}
           columnWrapperStyle={styles.gridRow}
           contentContainerStyle={styles.gridContainer}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <FontAwesome5 name="shopping-bag" size={50} color="#ccc" />
+              <FontAwesome5 name="inbox" size={60} color="#ccc" />
               <Text style={styles.emptyText}>
                 No products found in this category
+              </Text>
+              <Text style={styles.emptySubtext}>
+                Add products using the Admin Panel
               </Text>
             </View>
           }
@@ -173,21 +204,55 @@ const styles = StyleSheet.create({
     color: '#666',
     fontSize: 16,
   },
-  headerContainer: {
+  listContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+    paddingTop: 8,
+  },
+  // Admin Header Styles
+  adminHeader: {
     backgroundColor: 'white',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderBottomWidth: 1,
+    borderBottomWidth: 2,
     borderBottomColor: '#e0e0e0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
   },
-  companyName: {
-    fontSize: 16,
+  headerInfo: {
+    flex: 1,
+  },
+  adminBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'coral',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginBottom: 6,
+    gap: 4,
+  },
+  adminBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+  },
+  companyNameSmall: {
+    fontSize: 14,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 4,
+    marginBottom: 2,
   },
-  subtitle: {
-    fontSize: 14,
+  subtitleSmall: {
+    fontSize: 12,
     color: '#666',
   },
   // Grid View Styles
@@ -241,29 +306,51 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    marginBottom: 10,
   },
   gridPrice: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: 'coral',
+    color: '#28a745',
   },
   gridOriginalPrice: {
     fontSize: 12,
     color: '#999',
     textDecorationLine: 'line-through',
   },
+  gridEditButton: {
+    backgroundColor: '#007bff',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    borderRadius: 6,
+    gap: 4,
+  },
+  gridEditButtonText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
+  },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 60,
+    paddingTop: 100,
   },
   emptyText: {
     color: '#666',
-    fontSize: 16,
+    fontSize: 18,
+    fontWeight: '600',
     textAlign: 'center',
-    marginTop: 12,
+    marginTop: 16,
+  },
+  emptySubtext: {
+    color: '#999',
+    fontSize: 14,
+    textAlign: 'center',
+    marginTop: 8,
   },
 });
 
-export default ProductsScreen;
+export default AdminProductsScreen;

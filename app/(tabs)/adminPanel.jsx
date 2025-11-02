@@ -1,5 +1,6 @@
 ﻿import { AntDesign } from '@expo/vector-icons';
-import { addDoc, collection, deleteDoc, doc, getDocs, query, where } from 'firebase/firestore';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { addDoc, collection, deleteDoc, doc, getDocs, query, updateDoc, where } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Toast from 'react-native-toast-message';
@@ -7,6 +8,8 @@ import { db } from '../../lib/firebase';
 import AlertCard from '../components/AlertCard';
 
 export default function AdminPanel() {
+  const router = useRouter();
+  const params = useLocalSearchParams();
   const [companies, setCompanies] = useState([]);
   const [loadingCompanies, setLoadingCompanies] = useState(true);
   const [btnloading, setBtnLoading] = useState(false);
@@ -38,6 +41,8 @@ export default function AdminPanel() {
     price: '',
     originalPrice: '',
   });
+  const [editingProductId, setEditingProductId] = useState(null);
+  const [isEditMode, setIsEditMode] = useState(false);
 
   // Centralized custom alert state (for AlertCard)
   const [alertVisible, setAlertVisible] = useState(false);
@@ -77,6 +82,26 @@ export default function AdminPanel() {
       setSelectedCategoryName('');
     }
   }, [selectedCompanyId]);
+
+  // Handle edit product from products screen
+  useEffect(() => {
+    if (params.editProduct) {
+      try {
+        const productData = JSON.parse(params.editProduct);
+        handleEditProduct(productData);
+        
+        // Set company and category if provided
+        if (params.companyId) {
+          setSelectedCompanyId(params.companyId);
+        }
+        if (params.categoryId) {
+          setSelectedCategoryId(params.categoryId);
+        }
+      } catch (error) {
+        console.error('Error parsing edit product data:', error);
+      }
+    }
+  }, [params.editProduct]);
 
   const loadCompanies = async () => {
     try {
@@ -129,6 +154,47 @@ export default function AdminPanel() {
         text2: 'Failed to load categories',
       });
     }
+  };
+
+  const navigateToProducts = () => {
+    if (!selectedCompanyId || !selectedCategoryId) {
+      Toast.show({
+        type: 'warning',
+        text1: 'Selection Required',
+        text2: 'Please select both company and category first',
+      });
+      return;
+    }
+
+    // Get company data
+    const selectedCompanyData = companies.find(c => {
+      const compId = c.companyId || c.id;
+      return compId === selectedCompanyId;
+    });
+
+    // Get category data
+    const selectedCategoryData = categories.find(cat => cat.id === selectedCategoryId);
+
+    if (!selectedCompanyData || !selectedCategoryData) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Could not find selected company or category data',
+      });
+      return;
+    }
+
+    console.log('✅ Navigating to Admin Products with:', {
+      companyId: selectedCompanyId,
+      companyName: selectedCompanyData.name,
+      categoryId: selectedCategoryId,
+      categoryName: selectedCategoryData.title || selectedCategoryData.name,
+    });
+
+    // Navigate to admin products screen (separate from regular products)
+    router.push(
+      `../../adminProducts?companyId=${selectedCompanyId}&companyName=${encodeURIComponent(selectedCompanyData.name)}&categoryId=${selectedCategoryId}&categoryName=${encodeURIComponent(selectedCategoryData.title || selectedCategoryData.name || 'Category')}`
+    );
   };
 
   const handleAddCompany = async () => {
@@ -348,6 +414,108 @@ export default function AdminPanel() {
     }
   };
 
+  const handleUpdateProduct = async () => {
+    if (!editingProductId) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'No product selected for editing',
+      });
+      return;
+    }
+
+    if (!product.title.trim()) {
+      Toast.show({
+        type: 'error',
+        text1: 'Validation Error',
+        text2: 'Product title is required',
+      });
+      return;
+    }
+
+    if (!product.price.trim()) {
+      Toast.show({
+        type: 'error',
+        text1: 'Validation Error',
+        text2: 'Product price is required',
+      });
+      return;
+    }
+
+    try {
+      const productData = {
+        title: product.title,
+        price: parseInt(product.price) || 0,
+      };
+      
+      if (product.description && product.description.trim()) {
+        productData.description = product.description;
+      }
+      if (product.imageUrl && product.imageUrl.trim()) {
+        productData.imageUrl = product.imageUrl;
+      }
+      if (product.url && product.url.trim()) {
+        productData.url = product.url;
+      }
+      if (product.originalPrice && product.originalPrice.trim()) {
+        productData.originalPrice = parseInt(product.originalPrice) || 0;
+      }
+
+      console.log('Updating product:', editingProductId, productData);
+
+      const productRef = doc(db, 'products', editingProductId);
+      await updateDoc(productRef, productData);
+
+      Toast.show({
+        type: 'success',
+        text1: 'Success',
+        text2: 'Product updated successfully!',
+      });
+
+      // Reset form and edit mode
+      setProduct({ title: '', description: '', imageUrl: '', url: '', price: '', originalPrice: '' });
+      setIsEditMode(false);
+      setEditingProductId(null);
+    } catch (err) {
+      console.error('Error updating product:', err);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: err.message || 'Failed to update product',
+      });
+    }
+  };
+
+  const handleEditProduct = (productData) => {
+    setIsEditMode(true);
+    setEditingProductId(productData.id);
+    setProduct({
+      title: productData.title || '',
+      description: productData.description || '',
+      imageUrl: productData.imageUrl || '',
+      url: productData.url || '',
+      price: productData.price?.toString() || '',
+      originalPrice: productData.originalPrice?.toString() || '',
+    });
+    // Scroll to product form
+    Toast.show({
+      type: 'info',
+      text1: 'Edit Mode',
+      text2: 'Update product details below',
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditMode(false);
+    setEditingProductId(null);
+    setProduct({ title: '', description: '', imageUrl: '', url: '', price: '', originalPrice: '' });
+    Toast.show({
+      type: 'info',
+      text1: 'Cancelled',
+      text2: 'Edit mode cancelled',
+    });
+  };
+
   // Delete functions
   const handleDeleteCompany = async (companyId, companyName) => {
     Alert.alert(
@@ -548,6 +716,17 @@ export default function AdminPanel() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
+      {/* View Products Button - Top Right */}
+      {selectedCompanyId && selectedCategoryId && (
+        <TouchableOpacity 
+          style={styles.viewProductsButton}
+          onPress={navigateToProducts}
+        >
+          <AntDesign name="eye" size={20} color="white" />
+          <Text style={styles.viewProductsButtonText}>View Products</Text>
+        </TouchableOpacity>
+      )}
+
       <ScrollView 
         style={styles.container}
         contentContainerStyle={styles.scrollContent}
@@ -689,7 +868,16 @@ export default function AdminPanel() {
       </View>
 
       <View style={styles.separator}>
-        <Text style={styles.sectionTitle}>🧾 Add Product</Text>
+        <Text style={styles.sectionTitle}>
+          {isEditMode ? '✏️ Edit Product' : '🧾 Add Product'}
+        </Text>
+        {isEditMode && (
+          <View style={[styles.selectedBadge, { backgroundColor: '#FFF3CD' }]}>
+            <Text style={[styles.selectedBadgeText, { color: '#856404' }]}>
+              📝 Editing Mode - Update product details below
+            </Text>
+          </View>
+        )}
         {selectedCompanyId ? (
           <View style={styles.selectedBadge}>
             <Text style={styles.selectedBadgeText}>
@@ -755,14 +943,34 @@ export default function AdminPanel() {
           style={styles.input}
           editable={!!selectedCategoryId}
         />
-        <TouchableOpacity 
-          style={[styles.button, !selectedCategoryId && styles.buttonDisabled]} 
-          onPress={handleAddProduct}
-          disabled={!selectedCategoryId}
-        >
-          <Text style={styles.buttonText}>{btnloading ? <ActivityIndicator color="white" />
-                    : "Add Product"}</Text>
-        </TouchableOpacity>
+        {isEditMode ? (
+          <View style={styles.buttonRow}>
+            <TouchableOpacity 
+              style={[styles.button, styles.updateButton, { flex: 1, marginRight: 8 }]} 
+              onPress={handleUpdateProduct}
+            >
+              <Text style={styles.buttonText}>
+                {btnloading ? <ActivityIndicator color="white" /> : "Update Product"}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.button, styles.cancelButton, { flex: 1, marginLeft: 8 }]} 
+              onPress={handleCancelEdit}
+            >
+              <Text style={styles.buttonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity 
+            style={[styles.button, !selectedCategoryId && styles.buttonDisabled]} 
+            onPress={handleAddProduct}
+            disabled={!selectedCategoryId}
+          >
+            <Text style={styles.buttonText}>
+              {btnloading ? <ActivityIndicator color="white" /> : "Add Product"}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
 
         <Toast />
@@ -926,5 +1134,181 @@ const styles = StyleSheet.create({
       alignItems: 'center',
       zIndex: 999,
       elevation: 999,
+    },
+    buttonDisabled: {
+      backgroundColor: '#cccccc',
+      opacity: 0.6,
+    },
+    buttonRow: {
+      flexDirection: 'row',
+      marginTop: 8,
+    },
+    updateButton: {
+      backgroundColor: '#28a745',
+    },
+    cancelButton: {
+      backgroundColor: '#6c757d',
+    },
+    // View Products Button - Top Right
+    viewProductsButton: {
+      position: 'absolute',
+      top: 10,
+      right: 10,
+      backgroundColor: 'coral',
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 15,
+      paddingVertical: 10,
+      borderRadius: 20,
+      zIndex: 100,
+      elevation: 5,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+    },
+    viewProductsButtonText: {
+      color: 'white',
+      fontWeight: '600',
+      fontSize: 14,
+      marginLeft: 6,
+    },
+    // Products View Styles (Grid Layout - Similar to Categories)
+    productsViewContainer: {
+      flex: 1,
+      backgroundColor: '#f5f5f5',
+    },
+    productsViewHeader: {
+      backgroundColor: 'white',
+      paddingHorizontal: 20,
+      paddingVertical: 15,
+      paddingTop: 20,
+      borderBottomWidth: 1,
+      borderBottomColor: '#e0e0e0',
+    },
+    backButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 12,
+      padding: 8,
+    },
+    backButtonText: {
+      marginLeft: 8,
+      fontSize: 16,
+      color: '#333',
+      fontWeight: '500',
+    },
+    productsViewTitle: {
+      fontSize: 22,
+      fontWeight: 'bold',
+      color: '#333',
+      marginTop: 8,
+    },
+    productsViewSubtitle: {
+      fontSize: 14,
+      color: '#666',
+      marginTop: 4,
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingTop: 50,
+    },
+    loadingText: {
+      marginTop: 10,
+      color: '#666',
+      fontSize: 16,
+    },
+    emptyProductsContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingTop: 100,
+    },
+    emptyProductsText: {
+      fontSize: 18,
+      color: '#999',
+      marginTop: 15,
+      fontWeight: '600',
+    },
+    emptyProductsSubtext: {
+      fontSize: 14,
+      color: '#bbb',
+      marginTop: 5,
+      textAlign: 'center',
+      paddingHorizontal: 40,
+    },
+    productsGridContainer: {
+      paddingHorizontal: 5,
+      paddingVertical: 15,
+      paddingBottom: 20,
+    },
+    productsGridRow: {
+      justifyContent: 'space-between',
+      marginBottom: 15,
+      paddingHorizontal: 5,
+    },
+    productCard: {
+      backgroundColor: 'white',
+      borderRadius: 12,
+      width: '48%',
+      overflow: 'hidden',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 3,
+    },
+    productImageContainer: {
+      width: '100%',
+      height: 140,
+      backgroundColor: '#f0f0f0',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    placeholderProduct: {
+      backgroundColor: '#f5f5f5',
+    },
+    productImageIcon: {
+      fontSize: 30,
+      marginBottom: 5,
+    },
+    productImageUrl: {
+      fontSize: 10,
+      color: '#888',
+      textAlign: 'center',
+      paddingHorizontal: 5,
+    },
+    productCardInfo: {
+      padding: 12,
+    },
+    productCardTitle: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: '#333',
+      marginBottom: 4,
+      minHeight: 36,
+    },
+    productCardDescription: {
+      fontSize: 12,
+      color: '#666',
+      marginBottom: 8,
+      lineHeight: 16,
+    },
+    productPriceRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    productCardPrice: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      color: '#4CAF50',
+    },
+    originalPriceSmall: {
+      fontSize: 12,
+      color: '#999',
+      textDecorationLine: 'line-through',
     },
 });

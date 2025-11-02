@@ -34,6 +34,24 @@ export default function RootLayout()
             <Stack.Screen name='signup' options={{headerShown:false}}/>
             <Stack.Screen name='(tabs)' options={{headerShown:false}}/>
             <Stack.Screen name='CategoriesScreen' options={{headerShown:false}}/>
+            <Stack.Screen 
+              name='products' 
+              options={{
+                headerShown: true,
+                headerTitle: 'Products',
+                presentation: 'card',
+                animation: 'slide_from_right'
+              }}
+            />
+            <Stack.Screen 
+              name='adminProducts' 
+              options={{
+                headerShown: true,
+                headerTitle: 'Admin Products',
+                presentation: 'card',
+                animation: 'slide_from_right'
+              }}
+            />
           </Stack>
         </SafeAreaProvider>
       </AuthProvider>
