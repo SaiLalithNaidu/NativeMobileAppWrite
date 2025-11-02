@@ -3,18 +3,21 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  FlatList,
-  Image,
-  StyleSheet,
-  Text,
-  View
+    ActivityIndicator,
+    FlatList,
+    Image,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
+import { useCart } from '../contexts/CartContext';
 import { db } from '../lib/firebase';
 
 const ProductsScreen = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const { addToCart, removeFromCart, getItemQuantity, getTotalItems, getTotal } = useCart();
   
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -64,37 +67,81 @@ const ProductsScreen = () => {
     }
   };
 
-  const renderProductItem = ({ item }) => (
-    <View style={styles.gridItem}>
-      {item.imageUrl ? (
-        <Image 
-          source={{ uri: item.imageUrl }}
-          style={styles.gridImage}
-          resizeMode="cover"
-        />
-      ) : (
-        <View style={[styles.gridImage, styles.placeholderImage]}>
-          <FontAwesome5 name="box" size={40} color="#ccc" />
-        </View>
-      )}
-      <View style={styles.gridInfo}>
-        <Text style={styles.gridTitle} numberOfLines={2}>
-          {item.title || "Unnamed Product"}
-        </Text>
-        {item.description && (
-          <Text style={styles.gridDescription} numberOfLines={2}>
-            {item.description}
-          </Text>
-        )}
-        <View style={styles.gridPriceContainer}>
-          {item.originalPrice && (
-            <Text style={styles.gridOriginalPrice}>₹{item.originalPrice}</Text>
+  const handleProductPress = (product) => {
+    router.push({
+      pathname: '/productDetail',
+      params: { productId: product.id }
+    });
+  };
+
+  const renderProductItem = ({ item }) => {
+    const quantity = getItemQuantity(item.id);
+
+    return (
+      <View style={styles.gridItem}>
+        <TouchableOpacity 
+          onPress={() => handleProductPress(item)}
+          activeOpacity={0.8}
+        >
+          {item.imageUrl ? (
+            <Image 
+              source={{ uri: item.imageUrl }}
+              style={styles.gridImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={[styles.gridImage, styles.placeholderImage]}>
+              <FontAwesome5 name="box" size={40} color="#ccc" />
+            </View>
           )}
-          <Text style={styles.gridPrice}>₹{item.price || 0}</Text>
+        </TouchableOpacity>
+        <View style={styles.gridInfo}>
+          <TouchableOpacity onPress={() => handleProductPress(item)}>
+            <Text style={styles.gridTitle} numberOfLines={2}>
+              {item.title || "Unnamed Product"}
+            </Text>
+          </TouchableOpacity>
+          {item.description && (
+            <Text style={styles.gridDescription} numberOfLines={2}>
+              {item.description}
+            </Text>
+          )}
+          <View style={styles.gridPriceContainer}>
+            {item.originalPrice && (
+              <Text style={styles.gridOriginalPrice}>₹{item.originalPrice}</Text>
+            )}
+            <Text style={styles.gridPrice}>₹{item.price || 0}</Text>
+          </View>
+
+          {/* Add to Cart Controls - Swiggy/Zomato Style */}
+          {quantity === 0 ? (
+            <TouchableOpacity 
+              style={styles.addButton}
+              onPress={() => addToCart(item)}
+            >
+              <Text style={styles.addButtonText}>ADD</Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.quantityControl}>
+              <TouchableOpacity 
+                style={styles.quantityButton}
+                onPress={() => removeFromCart(item.id)}
+              >
+                <FontAwesome5 name="minus" size={12} color="#fff" />
+              </TouchableOpacity>
+              <Text style={styles.quantityText}>{quantity}</Text>
+              <TouchableOpacity 
+                style={styles.quantityButton}
+                onPress={() => addToCart(item)}
+              >
+                <FontAwesome5 name="plus" size={12} color="#fff" />
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   if (loading) {
     return (
@@ -152,6 +199,26 @@ const ProductsScreen = () => {
             </View>
           }
         />
+
+        {/* Floating View Cart Button */}
+        {getTotalItems() > 0 && (
+          <TouchableOpacity 
+            style={styles.viewCartButton}
+            onPress={() => router.push('/(tabs)/cart')}
+            activeOpacity={0.9}
+          >
+            <View style={styles.cartButtonLeft}>
+              <View style={styles.cartItemBadge}>
+                <Text style={styles.cartItemBadgeText}>{getTotalItems()}</Text>
+              </View>
+              <Text style={styles.viewCartText}>View Cart</Text>
+            </View>
+            <View style={styles.cartButtonRight}>
+              <Text style={styles.cartTotalText}>₹{getTotal().toFixed(2)}</Text>
+              <FontAwesome5 name="arrow-right" size={16} color="white" />
+            </View>
+          </TouchableOpacity>
+        )}
       </View>
     </>
   );
@@ -194,7 +261,7 @@ const styles = StyleSheet.create({
   gridContainer: {
     paddingHorizontal: 8,
     paddingVertical: 12,
-    paddingBottom: 20,
+    paddingBottom: 100, // Extra padding for floating cart button
   },
   gridRow: {
     justifyContent: 'space-between',
@@ -252,6 +319,48 @@ const styles = StyleSheet.create({
     color: '#999',
     textDecorationLine: 'line-through',
   },
+  // Cart Controls - Swiggy/Zomato Style
+  addButton: {
+    backgroundColor: 'coral',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginTop: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'coral',
+  },
+  addButtonText: {
+    color: 'white',
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  quantityControl: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'coral',
+    borderRadius: 8,
+    marginTop: 8,
+    paddingHorizontal: 4,
+    paddingVertical: 6,
+  },
+  quantityButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  quantityText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: 'white',
+    minWidth: 30,
+    textAlign: 'center',
+  },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -263,6 +372,58 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
     marginTop: 12,
+  },
+  // Floating View Cart Button
+  viewCartButton: {
+    position: 'absolute',
+    bottom: 20,
+    left: 16,
+    right: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: 'coral',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  cartButtonLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  cartItemBadge: {
+    backgroundColor: 'white',
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cartItemBadgeText: {
+    color: 'coral',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  viewCartText: {
+    color: 'white',
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  cartButtonRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  cartTotalText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '700',
   },
 });
 

@@ -3,6 +3,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider } from "../contexts/AuthContext";
+import { CartProvider } from "../contexts/CartContext";
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync().catch(() => {
@@ -27,42 +28,53 @@ export default function RootLayout()
 
   return  (
     <AuthProvider>
-      <SafeAreaProvider>
-          <Stack>
-            <Stack.Screen name='index' options={{headerShown:false}}/>
-            <Stack.Screen name='auth' options={{headerShown:false}}/>
-            <Stack.Screen name='signup' options={{headerShown:false}}/>
-            <Stack.Screen name='(tabs)' options={{headerShown:false}}/>
-            <Stack.Screen name='CategoriesScreen' options={{headerShown:false}}/>
-            <Stack.Screen 
-              name='products' 
-              options={{
-                headerShown: true,
-                headerTitle: 'Products',
-                presentation: 'card',
-                animation: 'slide_from_right'
-              }}
-            />
-            <Stack.Screen 
-              name='adminProducts' 
-              options={{
-                headerShown: true,
-                headerTitle: 'Admin Products',
-                presentation: 'card',
-                animation: 'slide_from_right'
-              }}
-            />
-            <Stack.Screen 
-              name='editProduct' 
-              options={{
-                headerShown: true,
-                headerTitle: 'Edit Product',
-                presentation: 'card',
-                animation: 'slide_from_right'
-              }}
-            />
-          </Stack>
-        </SafeAreaProvider>
+      <CartProvider>
+        <SafeAreaProvider>
+            <Stack>
+              <Stack.Screen name='index' options={{headerShown:false}}/>
+              <Stack.Screen name='auth' options={{headerShown:false}}/>
+              <Stack.Screen name='signup' options={{headerShown:false}}/>
+              <Stack.Screen name='(tabs)' options={{headerShown:false}}/>
+              <Stack.Screen name='CategoriesScreen' options={{headerShown:false}}/>
+              <Stack.Screen 
+                name='products' 
+                options={{
+                  headerShown: true,
+                  headerTitle: 'Products',
+                  presentation: 'card',
+                  animation: 'slide_from_right'
+                }}
+              />
+              <Stack.Screen 
+                name='adminProducts' 
+                options={{
+                  headerShown: true,
+                  headerTitle: 'Admin Products',
+                  presentation: 'card',
+                  animation: 'slide_from_right'
+                }}
+              />
+              <Stack.Screen 
+                name='editProduct' 
+                options={{
+                  headerShown: true,
+                  headerTitle: 'Edit Product',
+                  presentation: 'card',
+                  animation: 'slide_from_right'
+                }}
+              />
+              <Stack.Screen 
+                name='productDetail' 
+                options={{
+                  headerShown: true,
+                  headerTitle: 'Product Details',
+                  presentation: 'card',
+                  animation: 'slide_from_right'
+                }}
+              />
+            </Stack>
+          </SafeAreaProvider>
+        </CartProvider>
       </AuthProvider>
   );
 }
