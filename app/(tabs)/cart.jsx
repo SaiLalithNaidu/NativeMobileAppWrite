@@ -80,7 +80,10 @@ const CartScreen = () => {
           <Text style={styles.footerTotal}>₹{cartSummary.total.toFixed(2)}</Text>
           <Text style={styles.footerSubtext}>{cartSummary.itemCount} items</Text>
         </View>
-        <TouchableOpacity style={styles.checkoutButton}>
+        <TouchableOpacity 
+          style={styles.checkoutButton}
+          onPress={() => router.push('/checkout')}
+        >
           <Text style={styles.checkoutButtonText}>Proceed to Checkout</Text>
           <FontAwesome5 name="arrow-right" size={16} color="white" />
         </TouchableOpacity>
