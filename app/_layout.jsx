@@ -52,6 +52,15 @@ export default function RootLayout()
                 animation: 'slide_from_right'
               }}
             />
+            <Stack.Screen 
+              name='editProduct' 
+              options={{
+                headerShown: true,
+                headerTitle: 'Edit Product',
+                presentation: 'card',
+                animation: 'slide_from_right'
+              }}
+            />
           </Stack>
         </SafeAreaProvider>
       </AuthProvider>

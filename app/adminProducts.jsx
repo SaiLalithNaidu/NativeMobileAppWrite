@@ -1,15 +1,17 @@
 import { FontAwesome5 } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { collection, getDocs, query, where } from 'firebase/firestore';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  FlatList,
-  Image,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    FlatList,
+    Image,
+    RefreshControl,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { db } from '../lib/firebase';
 
@@ -19,6 +21,7 @@ const AdminProductsScreen = () => {
   
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   
   // Extract simple params
   const { companyId, companyName, categoryId, categoryName } = params;
@@ -34,9 +37,23 @@ const AdminProductsScreen = () => {
     }
   }, [companyId, categoryId]);
 
-  const fetchProducts = async () => {
+  // Refresh products when screen comes into focus (after editing)
+  useFocusEffect(
+    useCallback(() => {
+      if (companyId && categoryId) {
+        console.log('🔄 Screen focused - Refreshing products...');
+        fetchProducts();
+      }
+    }, [companyId, categoryId])
+  );
+
+  const fetchProducts = async (isRefreshing = false) => {
     try {
-      setLoading(true);
+      if (isRefreshing) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
       
       console.log('🔍 Fetching products with:', {
         companyId,
@@ -62,17 +79,24 @@ const AdminProductsScreen = () => {
       console.error('❌ Error fetching products:', error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
+  const onRefresh = () => {
+    fetchProducts(true);
+  };
+
   const handleEditProduct = (product) => {
-    // Navigate back to admin panel with product data
+    // Navigate to dedicated edit product screen
     router.push({
-      pathname: '/(tabs)/adminPanel',
+      pathname: '/editProduct',
       params: {
-        editProduct: JSON.stringify(product),
+        product: JSON.stringify(product),
         companyId: companyId,
-        categoryId: categoryId
+        companyName: companyName,
+        categoryId: categoryId,
+        categoryName: categoryName
       }
     });
   };
@@ -171,6 +195,14 @@ const AdminProductsScreen = () => {
           numColumns={2}
           columnWrapperStyle={styles.gridRow}
           contentContainerStyle={styles.gridContainer}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={['coral']}
+              tintColor="coral"
+            />
+          }
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <FontAwesome5 name="inbox" size={60} color="#ccc" />
