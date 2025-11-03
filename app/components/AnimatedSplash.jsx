@@ -3,9 +3,9 @@
  * Custom animated splash screen with swinging logo animation
  */
 
+import * as SplashScreen from 'expo-splash-screen';
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet } from 'react-native';
-import * as SplashScreen from 'expo-splash-screen';
 
 // Keep the native splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
