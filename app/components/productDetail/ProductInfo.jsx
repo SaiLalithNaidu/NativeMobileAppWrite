@@ -12,6 +12,7 @@
 import { FontAwesome5 } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { COLORS } from '../../../src/utils/constants';
 
 export const ProductInfo = ({ product, onAddToCart, onRemoveFromCart, quantity }) => {
   if (!product) return null;
@@ -149,13 +150,13 @@ const styles = StyleSheet.create({
     textDecorationLine: 'line-through',
   },
   discountBadge: {
-    backgroundColor: '#fff3e0',
+    backgroundColor: '#f0f7ff',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
   },
   discountText: {
-    color: '#ff6f00',
+    color: COLORS.PRIMARY,
     fontSize: 13,
     fontWeight: '700',
   },
@@ -208,7 +209,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'coral',
+    backgroundColor: COLORS.PRIMARY,
     paddingVertical: 16,
     borderRadius: 12,
     gap: 10,
@@ -223,7 +224,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'coral',
+    backgroundColor: COLORS.PRIMARY,
     borderRadius: 12,
     paddingVertical: 12,
     gap: 20,

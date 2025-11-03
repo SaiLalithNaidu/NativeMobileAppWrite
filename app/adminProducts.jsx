@@ -15,6 +15,7 @@ import {
     View
 } from 'react-native';
 import { db } from '../lib/firebase';
+import { COLORS } from '../src/utils/constants';
 
 const AdminProductsScreen = () => {
   const router = useRouter();
@@ -28,40 +29,14 @@ const AdminProductsScreen = () => {
   // Extract simple params
   const { companyId, companyName, categoryId, categoryName } = params;
 
-  useEffect(() => {
-    console.log('🚀 Admin Products Screen Mounted - Params:', { companyId, companyName, categoryId, categoryName });
-    
-    if (companyId && categoryId) {
-      fetchProducts();
-    } else {
-      console.warn('❌ Missing params - companyId or categoryId not provided');
-      setLoading(false);
-    }
-  }, [companyId, categoryId]);
-
-  // Refresh products when screen comes into focus (after editing)
-  useFocusEffect(
-    useCallback(() => {
-      if (companyId && categoryId) {
-        console.log('🔄 Screen focused - Refreshing products...');
-        fetchProducts();
-      }
-    }, [companyId, categoryId])
-  );
-
-  const fetchProducts = async (isRefreshing = false) => {
+  const fetchProducts = useCallback(async (isRefreshing = false) => {
     try {
       if (isRefreshing) {
         setRefreshing(true);
       } else {
         setLoading(true);
       }
-      
-      console.log('🔍 Fetching products with:', {
-        companyId,
-        categoryId
-      });
-      
+      console.log('🔍 Fetching products with:', { companyId, categoryId });
       const productsRef = collection(db, 'products');
       const q = query(
         productsRef, 
@@ -69,12 +44,7 @@ const AdminProductsScreen = () => {
         where('categoryId', '==', categoryId)
       );
       const snapshot = await getDocs(q);
-      
-      const productsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      
+      const productsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       console.log('✅ Admin Products loaded:', productsData.length);
       setProducts(productsData);
     } catch (error) {
@@ -83,7 +53,29 @@ const AdminProductsScreen = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [companyId, categoryId]);
+
+  useEffect(() => {
+    console.log('🚀 Admin Products Screen Mounted - Params:', { companyId, companyName, categoryId, categoryName });
+    if (companyId && categoryId) {
+      fetchProducts();
+    } else {
+      console.warn('❌ Missing params - companyId or categoryId not provided');
+      setLoading(false);
+    }
+  }, [companyId, categoryId, companyName, categoryName, fetchProducts]);
+
+  // Refresh products when screen comes into focus (after editing)
+  useFocusEffect(
+    useCallback(() => {
+      if (companyId && categoryId) {
+        console.log('🔄 Screen focused - Refreshing products...');
+        fetchProducts();
+      }
+    }, [companyId, categoryId, fetchProducts])
+  );
+
+  // fetchProducts defined via useCallback above
 
   const onRefresh = () => {
     fetchProducts(true);
@@ -169,7 +161,7 @@ const AdminProductsScreen = () => {
           }} 
         />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="coral" />
+          <ActivityIndicator size="large" color={COLORS.PRIMARY} />
           <Text style={styles.loadingText}>Loading products...</Text>
         </View>
       </>
@@ -238,8 +230,8 @@ const AdminProductsScreen = () => {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              colors={['coral']}
-              tintColor="coral"
+              colors={[COLORS.PRIMARY]}
+              tintColor={COLORS.PRIMARY}
             />
           }
           ListEmptyComponent={
@@ -306,7 +298,7 @@ const styles = StyleSheet.create({
   adminBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'coral',
+    backgroundColor: COLORS.PRIMARY,
     alignSelf: 'flex-start',
     paddingHorizontal: 8,
     paddingVertical: 4,

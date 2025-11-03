@@ -3,6 +3,7 @@ import { Tabs, useRouter } from "expo-router";
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
+import { COLORS } from '../../src/utils/constants';
 
 export default function TabsLayout() {
 
@@ -16,7 +17,15 @@ export default function TabsLayout() {
   };
 
   return (
-    <Tabs screenOptions={{tabBarActiveTintColor:"coral"}} initialRouteName="home">
+    <Tabs 
+      screenOptions={{
+        tabBarActiveTintColor: COLORS.PRIMARY,
+        tabBarInactiveTintColor: '#999',
+        tabBarStyle: { backgroundColor: '#fff' },
+        headerTitleStyle: { color: COLORS.PRIMARY_DARK },
+      }} 
+      initialRouteName="home"
+    >
         <Tabs.Screen 
           name="home" 
           options={{ 
@@ -24,7 +33,7 @@ export default function TabsLayout() {
             tabBarIcon:({color})=> <FontAwesome5 name="home" size={18} color={color} />,
             headerRight: () => (
               <View style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
-                <Text style={{ flexDirection: "row", alignItems: "center", fontSize: 8, paddingRight: 5 }}>Hi, {user ? user.email : 'Guest'}</Text>
+                <Text style={{ flexDirection: "row", alignItems: "center", fontSize: 12, paddingRight: 8, color: '#666' }}>Hi, {user ? user.email : 'Guest'}</Text>
                 <TouchableOpacity onPress={handleLogout}>
                   <AntDesign name="logout" size={22} color="black" style={{ marginRight: 15 }} />
                 </TouchableOpacity>
@@ -81,7 +90,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: -8,
     top: -6,
-    backgroundColor: '#ff3b30',
+    backgroundColor: COLORS.PRIMARY,
     borderRadius: 10,
     minWidth: 18,
     height: 18,

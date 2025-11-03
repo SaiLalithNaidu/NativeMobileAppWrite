@@ -5,6 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { db } from '../../lib/firebase';
+import { COLORS } from '../../src/utils/constants';
 import AlertCard from '../components/AlertCard';
 
 export default function AdminPanel() {
@@ -101,7 +102,7 @@ export default function AdminPanel() {
         console.error('Error parsing edit product data:', error);
       }
     }
-  }, [params.editProduct]);
+  }, [params.editProduct, params.companyId, params.categoryId]);
 
   const loadCompanies = async () => {
     try {
@@ -619,38 +620,7 @@ export default function AdminPanel() {
     );
   };
 
-  const handleDeleteProduct = async (productId, productTitle) => {
-    Alert.alert(
-      'Delete Product',
-      `Are you sure you want to delete "${productTitle}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteDoc(doc(db, 'products', productId));
-
-              Toast.show({
-                type: 'success',
-                text1: 'Success',
-                text2: 'Product deleted!',
-              });
-
-              // Use custom AlertCard for success feedback
-              showAlert('success', 'Success', 'Product deleted!');
-              
-            } catch (err) {
-              console.error('Error deleting product:', err);
-              // Use custom AlertCard for error feedback
-              showAlert('error', 'Error', err.message || 'Failed to delete product');
-            }
-          },
-        },
-      ]
-    );
-  };
+  // Note: Product deletions are handled within the Admin Products screen
 
   const renderCompanyItem = ({ item }) => {
     // Use custom companyId if it exists, otherwise use Firebase document id
@@ -678,7 +648,7 @@ export default function AdminPanel() {
           style={styles.deleteButton}
           onPress={() => handleDeleteCompany(item.id, item.name)}
         >
-          <AntDesign name="delete" size={20} color="#ff4444" />
+          <AntDesign name="delete" size={20} color={COLORS.ERROR} />
         </TouchableOpacity>
       </View>
     );
@@ -705,7 +675,7 @@ export default function AdminPanel() {
         style={styles.deleteButton}
         onPress={() => handleDeleteCategory(item.id, item.title)}
       >
-        <AntDesign name="delete" size={20} color="#ff4444" />
+        <AntDesign name="delete" size={20} color={COLORS.ERROR} />
       </TouchableOpacity>
     </View>
   );
@@ -766,7 +736,7 @@ export default function AdminPanel() {
       <View style={styles.separator}>
         <Text style={styles.sectionTitle}>📋 Existing Companies</Text>
         {loadingCompanies ? (
-          <ActivityIndicator size="small" color="coral" />
+          <ActivityIndicator size="small" color={COLORS.PRIMARY} />
         ) : companies.length === 0 ? (
           <Text style={styles.emptyText}>No companies yet. Add one above!</Text>
         ) : (
@@ -995,7 +965,7 @@ export default function AdminPanel() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.BACKGROUND,
   },
   scrollContent: {
     padding: 20,
@@ -1005,7 +975,7 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: 'bold',
     marginBottom: 15,
-    color: '#333',
+    color: COLORS.SECONDARY,
   },
   subSectionTitle: {
     fontSize: 16,
@@ -1015,23 +985,23 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: COLORS.LIGHT_GRAY,
     borderRadius: 8,
     marginBottom: 10,
     padding: 12,
-    backgroundColor: 'white',
+    backgroundColor: COLORS.WHITE,
     fontSize: 16,
   },
   separator: {
     marginTop: 30,
     paddingTop: 20,
     borderTopWidth: 1,
-    borderTopColor: '#ddd',
+    borderTopColor: COLORS.LIGHT_GRAY,
   },
   subSection: {
     marginTop: 20,
     padding: 15,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.WHITE,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#e0e0e0',
@@ -1047,33 +1017,33 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 15,
-    backgroundColor: 'white',
+    backgroundColor: COLORS.WHITE,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#e0e0e0',
   },
   selectedItem: {
-    backgroundColor: '#fff0f0',
-    borderColor: 'coral',
+    backgroundColor: COLORS.ACCENT_LIGHT,
+    borderColor: COLORS.PRIMARY,
     borderWidth: 2,
   },
   listItemText: {
     fontSize: 16,
-    color: '#333',
+    color: COLORS.SECONDARY,
     flex: 1,
   },
   checkmark: {
     fontSize: 20,
-    color: 'coral',
+    color: COLORS.PRIMARY,
     fontWeight: 'bold',
   },
   deleteButton: {
     marginLeft: 8,
     padding: 10,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.WHITE,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#ff4444',
+    borderColor: COLORS.ERROR,
   },
   selectedBadge: {
     backgroundColor: '#d4edda',
@@ -1089,7 +1059,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   warningText: {
-    color: '#856404',
+    color: COLORS.WARNING,
     backgroundColor: '#fff3cd',
     padding: 10,
     borderRadius: 8,
@@ -1110,7 +1080,7 @@ const styles = StyleSheet.create({
     flexGrow: 0,
   },
   button: {
-        backgroundColor: 'coral',
+    backgroundColor: COLORS.PRIMARY,
         height: 50,
         borderRadius: 8,
         justifyContent: 'center',
@@ -1146,7 +1116,7 @@ const styles = StyleSheet.create({
       marginBottom: 20,
     },
     updateButton: {
-      backgroundColor: '#28a745',
+      backgroundColor: COLORS.SUCCESS,
     },
     cancelButton: {
       backgroundColor: '#6c757d',
@@ -1156,7 +1126,7 @@ const styles = StyleSheet.create({
       position: 'absolute',
       top: 10,
       right: 10,
-      backgroundColor: 'coral',
+      backgroundColor: COLORS.PRIMARY,
       flexDirection: 'row',
       alignItems: 'center',
       paddingHorizontal: 15,

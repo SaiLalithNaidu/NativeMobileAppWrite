@@ -19,6 +19,7 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
+import { COLORS } from '../../../src/utils/constants';
 
 export const RelatedProducts = ({ products, loading, onProductPress }) => {
   if (loading) {
@@ -26,7 +27,7 @@ export const RelatedProducts = ({ products, loading, onProductPress }) => {
       <View style={styles.container}>
         <Text style={styles.title}>Related Products</Text>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="small" color="coral" />
+          <ActivityIndicator size="small" color={COLORS.PRIMARY} />
         </View>
       </View>
     );
@@ -154,7 +155,7 @@ const styles = StyleSheet.create({
   },
   discountBadge: {
     alignSelf: 'flex-start',
-    backgroundColor: '#fff3e0',
+    backgroundColor: '#f0f7ff',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
@@ -162,7 +163,7 @@ const styles = StyleSheet.create({
   discountText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#ff6f00',
+    color: COLORS.PRIMARY,
   },
 });
 

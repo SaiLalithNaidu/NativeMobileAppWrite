@@ -1,3 +1,5 @@
+import { FontAwesome5 } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { collection, getDocs } from 'firebase/firestore';
 import React, { useEffect, useState } from "react";
@@ -11,6 +13,7 @@ import {
   View
 } from "react-native";
 import { db } from '../../lib/firebase';
+import { COLORS } from '../../src/utils/constants';
 import ImageCarousel from '../components/imageCarousel';
 
 // ============================================================================
@@ -20,7 +23,12 @@ import ImageCarousel from '../components/imageCarousel';
 // Companies List Screen
 const CompaniesScreen = ({ companies, onCompanySelect, getCategoryCount, getProductCount }) => {
   return (
-    <FlatList
+      <View style={styles.companiesListContainer}>
+        <View style={styles.sectionHeader}>
+          <FontAwesome5 name="building" size={20} color="#002147" />
+          <Text style={styles.sectionTitle}>Our Companies</Text>
+        </View>
+        <FlatList
       data={companies}
       keyExtractor={(item) => item.id}
       renderItem={({ item }) => (
@@ -29,35 +37,57 @@ const CompaniesScreen = ({ companies, onCompanySelect, getCategoryCount, getProd
           onPress={() => onCompanySelect(item)}
           activeOpacity={0.7}
         >
-          {item.logoUrl && (
-            <Image 
-              source={{ uri: item.logoUrl }}
-              style={styles.companyLogo}
-              resizeMode="contain"
-            />
-          )}
+            <LinearGradient
+              colors={['#f8f9fa', '#ffffff']}
+              style={styles.companyCard}
+            >
+              {item.logoUrl ? (
+                <View style={styles.logoWrapper}>
+                  <Image 
+                    source={{ uri: item.logoUrl }}
+                    style={styles.companyLogo}
+                    resizeMode="contain"
+                  />
+                </View>
+              ) : (
+                <View style={[styles.logoWrapper, styles.logoPlaceholder]}>
+                  <FontAwesome5 name="building" size={30} color="#002147" />
+                </View>
+              )}
           <View style={styles.categoryInfo}>
             <Text style={styles.categoryName}>
               {item.name || "Unnamed Company"}
             </Text>
             <View style={styles.categoryDescription}>
-              <Text style={styles.statsText}>
-                📂 {getCategoryCount(item)} Categories
-              </Text>
-              <Text style={styles.statsText}>
-                📦 {getProductCount(item)} Products
-              </Text>
-            </View>
-            <View style={styles.viewDetailsBtn}>
-              <Text style={styles.viewDetailsBtnText}>View Categories →</Text>
+                <View style={styles.statsBadge}>
+                  <FontAwesome5 name="folder" size={12} color="#0080ff" />
+                  <Text style={styles.statsText}>
+                    {getCategoryCount(item)}
+                  </Text>
+                </View>
+                <View style={styles.statsBadge}>
+                  <FontAwesome5 name="box" size={12} color="#0080ff" />
+                  <Text style={styles.statsText}>
+                    {getProductCount(item)}
+                  </Text>
+                </View>
             </View>
           </View>
+              <View style={styles.arrowIcon}>
+                <FontAwesome5 name="chevron-right" size={16} color="#0080ff" />
+              </View>
+            </LinearGradient>
         </TouchableOpacity>
       )}
+          showsVerticalScrollIndicator={false}
       ListEmptyComponent={
-        <Text style={styles.emptyText}>No companies available</Text>
+          <View style={styles.emptyContainer}>
+            <FontAwesome5 name="building" size={50} color="#ccc" />
+            <Text style={styles.emptyText}>No companies available</Text>
+          </View>
       }
     />
+      </View>
   );
 };
 
@@ -201,7 +231,7 @@ const Index = () => {
   if (loading) {
     return (
       <View style={styles.container}>
-        <ActivityIndicator size="large" color="coral" />
+        <ActivityIndicator size="large" color={COLORS.PRIMARY} />
         <Text style={styles.loadingText}>Loading companies...</Text>
       </View>
     );
@@ -221,12 +251,23 @@ const Index = () => {
 
   return (
     <View style={styles.mainContainer}>
-      {/* Image Carousel */}
-      <View style={styles.imageContainer}>
-        <ImageCarousel />
-      </View>
+        <LinearGradient
+          colors={['#002147', '#004080']}
+          style={styles.headerGradient}
+        >
+          <View style={styles.headerContent}>
+            <View style={styles.welcomeContainer}>
+              <Text style={styles.welcomeText}>Welcome to</Text>
+              <Text style={styles.brandText}>Ramesh Aqua</Text>
+              <Text style={styles.taglineText}>🦐 Fresh & Quality Seafood</Text>
+            </View>
+          </View>
+        </LinearGradient>
 
-      {/* Companies List */}
+        <View style={styles.imageContainer}>
+          <ImageCarousel />
+        </View>
+
       <View style={styles.contentContainer}>
         <CompaniesScreen 
           companies={companies}
@@ -244,55 +285,139 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
+      backgroundColor: '#f5f5f5',
   },
   mainContainer: {
     flex: 1,
     backgroundColor: '#f5f5f5',
-    top: 10,
   },
+    headerGradient: {
+      paddingTop: 60,
+      paddingBottom: 20,
+      paddingHorizontal: 20,
+    },
+    headerContent: {
+      alignItems: 'center',
+    },
+    welcomeContainer: {
+      alignItems: 'center',
+    },
+    welcomeText: {
+      fontSize: 16,
+      color: '#b3d9ff',
+      fontWeight: '500',
+    },
+    brandText: {
+      fontSize: 32,
+      fontWeight: 'bold',
+      color: 'white',
+      marginTop: 4,
+      textShadowColor: 'rgba(0, 0, 0, 0.3)',
+      textShadowOffset: { width: 1, height: 1 },
+      textShadowRadius: 3,
+    },
+    taglineText: {
+      fontSize: 14,
+      color: '#b3d9ff',
+      marginTop: 4,
+    },
   contentContainer: {
     flex: 1,
-    paddingHorizontal: 20,
   },
-  title: {
-    fontSize: 24,
+    companiesListContainer: {
+      flex: 1,
+      paddingHorizontal: 16,
+    },
+    sectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 16,
+      gap: 10,
+    },
+    sectionTitle: {
+      fontSize: 20,
     fontWeight: "bold",
-    marginBottom: 16,
-    marginTop: 10,
+      color: '#002147',
   },
   categoryItem: {
-    backgroundColor: 'white',
-    padding: 16,
     marginBottom: 12,
+    },
+    companyCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 16,
     borderRadius: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+      shadowOpacity: 0.15,
     shadowRadius: 4,
-    elevation: 3,
-    flexDirection: 'row',
-    alignItems: 'center',
+      elevation: 4,
+    },
+    logoWrapper: {
+      width: 70,
+      height: 70,
+      borderRadius: 12,
+      backgroundColor: 'white',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: 16,
+      borderWidth: 1,
+      borderColor: '#e0e0e0',
+    },
+    logoPlaceholder: {
+      backgroundColor: '#f0f7ff',
   },
   companyLogo: {
-    width: 60,
-    height: 60,
-    marginRight: 12,
-    borderRadius: 8,
+      width: 50,
+      height: 50,
+    },
+    categoryInfo: {
+      flex: 1,
+      gap: 8,
   },
   categoryName: {
-    fontSize: 16,
-    fontWeight: "600",
+      fontSize: 18,
+      fontWeight: "700",
+      color: '#002147',
+      marginBottom: 4,
   },
-  // categoryDescription: {
-  //   fontSize: 14,
-  //   color: "#555",
-  //   marginTop: 4,
-  // },
-  emptyText: {
-    color: "#666",
-    marginTop: 20,
-    textAlign: 'center',
+    categoryDescription: {
+      flexDirection: 'row',
+      gap: 12,
+    },
+    statsBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: '#f0f7ff',
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: 12,
+      gap: 6,
+    },
+    statsText: {
+      fontSize: 13,
+      color: '#0080ff',
+      fontWeight: '600',
+    },
+    arrowIcon: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: '#f0f7ff',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    emptyContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingTop: 60,
+    },
+    emptyText: {
+      color: "#999",
+      marginTop: 16,
+      textAlign: 'center',
+      fontSize: 16,
   },
   errorText: {
     color: "red",
@@ -301,218 +426,21 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 10,
-    color: "#555",
+      color: "#666",
+      fontSize: 16,
   },
   imageContainer:{
-    marginBottom: 16,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: 45,
-    borderColor: '#ddd',
-    borderWidth: 1,
-    borderRadius: 15,
-    paddingHorizontal: 15,
-    marginBottom: 16,
+    marginTop: -20,
     marginHorizontal: 20,
-    backgroundColor: 'white',
-  },
-  searchInput: {
-    flex: 1,
-    height: '100%',
-    fontSize: 16,
-  },
-  input:{
-    height: 45,
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 15,
-    paddingHorizontal: 10,
     marginBottom: 16,
-    backgroundColor: 'white',
-    marginHorizontal: 20,
-  },
-  searchIcon:{
-    size:15,
-    color:"rgba(66, 65, 65, 1)"
-  },
-  categoryDescription:{
-    display:"flex",
-    flexDirection:"row",
-    gap:10,
-  },
-  categoryInfo:{
-    flex: 1,
-    flexDirection:"column",
-    justifyContent:"space-around",
-    alignItems:"flex-start",
-  },
-  viewDetailsBtn:{
-    marginTop: 5,
-    height: 25,
-    backgroundColor: 'coral',
-    borderRadius: 10,
-    paddingVertical: 2,
-    paddingHorizontal: 10,
-  },
-  viewDetailsBtnText:{
-    color: 'white',
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  statsText: {
-    fontSize: 13,
-    color: '#666',
-  },
-  headerContainer: {
-    marginBottom: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    padding: 8,
-  },
-  backButtonText: {
-    marginLeft: 8,
-    fontSize: 16,
-    color: '#333',
-    fontWeight: '500',
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 4,
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: '#666',
-  },
-  descriptionText: {
-    fontSize: 13,
-    color: '#666',
-    marginTop: 4,
-  },
-  productItem: {
-    backgroundColor: 'white',
-    padding: 16,
-    marginBottom: 12,
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  productImage: {
-    width: '100%',
-    height: 200,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  productInfo: {
-    flex: 1,
-  },
-  productName: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
-  },
-  priceContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 8,
-    gap: 10,
-  },
-  price: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: 'coral',
-  },
-  originalPrice: {
-    fontSize: 16,
-    color: '#999',
-    textDecorationLine: 'line-through',
-  },
-  // Categories Grid Styles
-  categoriesContainer: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  categoriesHeader: {
-    backgroundColor: 'white',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    paddingTop: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  categoriesTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#333',
-    marginTop: 8,
-  },
-  categoriesSubtitle: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
-  },
-  gridContainer: {
-    paddingHorizontal: 5,
-    paddingVertical: 15,
-    paddingBottom: 20,
-  },
-  gridRow: {
-    justifyContent: 'space-between',
-    marginBottom: 15,
-    paddingHorizontal: 5,
-  },
-  categoryCard: {
-    backgroundColor: 'white',
     borderRadius: 12,
-    width: '48%',
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.2,
     shadowRadius: 4,
-    elevation: 3,
-  },
-  categoryCardImage: {
-    width: '100%',
-    height: 140,
-    backgroundColor: '#f0f0f0',
-  },
-  placeholderImage: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  categoryCardInfo: {
-    padding: 12,
-  },
-  categoryCardTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
-    minHeight: 36,
-  },
-  productCountText: {
-    fontSize: 12,
-    color: '#666',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingTop: 60,
+    elevation: 6,
+    zIndex: 1,
   },
 });
 

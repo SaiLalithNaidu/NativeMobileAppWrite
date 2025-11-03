@@ -27,6 +27,7 @@ import {
     View
 } from 'react-native';
 import { useCart } from '../contexts/CartContext';
+import { COLORS } from '../src/utils/constants';
 import { ProductImageGallery } from './components/productDetail/ProductImageGallery';
 import { ProductInfo } from './components/productDetail/ProductInfo';
 import { RelatedProducts } from './components/productDetail/RelatedProducts';
@@ -80,7 +81,7 @@ const ProductDetailScreen = () => {
           }} 
         />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="coral" />
+          <ActivityIndicator size="large" color={COLORS.PRIMARY} />
           <Text style={styles.loadingText}>Loading product...</Text>
         </View>
       </>
@@ -221,7 +222,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   backButton: {
-    backgroundColor: 'coral',
+    backgroundColor: COLORS.PRIMARY,
     paddingHorizontal: 32,
     paddingVertical: 14,
     borderRadius: 10,
@@ -240,7 +241,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: 'coral',
+    backgroundColor: COLORS.PRIMARY,
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderRadius: 12,
@@ -264,7 +265,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cartItemBadgeText: {
-    color: 'coral',
+    color: COLORS.PRIMARY,
     fontSize: 15,
     fontWeight: '700',
   },

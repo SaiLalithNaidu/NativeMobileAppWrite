@@ -20,6 +20,7 @@ import {
     View
 } from 'react-native';
 import { useCart } from '../../contexts/CartContext';
+import { COLORS } from '../../src/utils/constants';
 import { BillSummary } from '../components/cart/BillSummary';
 import { CartItem } from '../components/cart/CartItem';
 import { EmptyCart } from '../components/cart/EmptyCart';
@@ -62,7 +63,7 @@ const CartScreen = () => {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>My Cart</Text>
         <TouchableOpacity onPress={clearCart} style={styles.clearButton}>
-          <FontAwesome5 name="trash" size={16} color="#ff6347" />
+          <FontAwesome5 name="trash" size={16} color={COLORS.ERROR} />
           <Text style={styles.clearButtonText}>Clear</Text>
         </TouchableOpacity>
       </View>
@@ -183,7 +184,7 @@ const styles = StyleSheet.create({
   checkoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'coral',
+    backgroundColor: COLORS.PRIMARY,
     paddingHorizontal: 24,
     paddingVertical: 14,
     borderRadius: 10,

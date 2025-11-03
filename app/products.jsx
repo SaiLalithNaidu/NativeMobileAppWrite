@@ -1,7 +1,7 @@
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { collection, getDocs, query, where } from 'firebase/firestore';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     FlatList,
@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useCart } from '../contexts/CartContext';
 import { db } from '../lib/firebase';
+import { COLORS } from '../src/utils/constants';
 
 const ProductsScreen = () => {
   const router = useRouter();
@@ -25,26 +26,10 @@ const ProductsScreen = () => {
   // Extract simple params
   const { companyId, companyName, categoryId, categoryName } = params;
 
-  useEffect(() => {
-    console.log('🚀 Products Screen Mounted - Params:', { companyId, companyName, categoryId, categoryName });
-    
-    if (companyId && categoryId) {
-      fetchProducts();
-    } else {
-      console.warn('❌ Missing params - companyId or categoryId not provided');
-      setLoading(false);
-    }
-  }, [companyId, categoryId]);
-
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     try {
       setLoading(true);
-      
-      console.log('🔍 Fetching products with:', {
-        companyId,
-        categoryId
-      });
-      
+      console.log('🔍 Fetching products with:', { companyId, categoryId });
       const productsRef = collection(db, 'products');
       const q = query(
         productsRef, 
@@ -52,12 +37,7 @@ const ProductsScreen = () => {
         where('categoryId', '==', categoryId)
       );
       const snapshot = await getDocs(q);
-      
-      const productsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      
+      const productsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       console.log('✅ Products loaded:', productsData.length);
       setProducts(productsData);
     } catch (error) {
@@ -65,7 +45,19 @@ const ProductsScreen = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [companyId, categoryId]);
+
+  useEffect(() => {
+    console.log('🚀 Products Screen Mounted - Params:', { companyId, companyName, categoryId, categoryName });
+    if (companyId && categoryId) {
+      fetchProducts();
+    } else {
+      console.warn('❌ Missing params - companyId or categoryId not provided');
+      setLoading(false);
+    }
+  }, [companyId, categoryId, companyName, categoryName, fetchProducts]);
+
+  // fetchProducts defined via useCallback above
 
   const handleProductPress = (product) => {
     router.push({
@@ -155,7 +147,7 @@ const ProductsScreen = () => {
           }} 
         />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="coral" />
+          <ActivityIndicator size="large" color={COLORS.PRIMARY} />
           <Text style={styles.loadingText}>Loading products...</Text>
         </View>
       </>
@@ -312,7 +304,7 @@ const styles = StyleSheet.create({
   gridPrice: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: 'coral',
+    color: COLORS.PRIMARY,
   },
   gridOriginalPrice: {
     fontSize: 12,
@@ -321,14 +313,14 @@ const styles = StyleSheet.create({
   },
   // Cart Controls - Swiggy/Zomato Style
   addButton: {
-    backgroundColor: 'coral',
+    backgroundColor: COLORS.PRIMARY,
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 8,
     marginTop: 8,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'coral',
+    borderColor: COLORS.PRIMARY,
   },
   addButtonText: {
     color: 'white',
@@ -340,7 +332,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'coral',
+    backgroundColor: COLORS.PRIMARY,
     borderRadius: 8,
     marginTop: 8,
     paddingHorizontal: 4,
@@ -382,7 +374,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: 'coral',
+    backgroundColor: COLORS.PRIMARY,
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderRadius: 12,
@@ -406,7 +398,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cartItemBadgeText: {
-    color: 'coral',
+    color: COLORS.PRIMARY,
     fontSize: 15,
     fontWeight: '700',
   },

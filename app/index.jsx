@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
+import { COLORS } from '../src/utils/constants';
 
 export default function Index() {
   const router = useRouter();
@@ -15,11 +16,11 @@ export default function Index() {
         router.replace('/auth');
       }
     }
-  }, [isAuthenticated, loading]);
+  }, [isAuthenticated, loading, router]);
 
   return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <ActivityIndicator size="large" color="coral" />
+      <ActivityIndicator size="large" color={COLORS.PRIMARY} />
     </View>
   );
 }

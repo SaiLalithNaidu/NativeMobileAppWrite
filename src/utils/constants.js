@@ -42,7 +42,11 @@ export const SCREENS = {
 
 // Colors
 export const COLORS = {
-  PRIMARY: 'coral',
+  // Brand palette (Ramesh Aqua)
+  PRIMARY: '#0080ff',        // Primary action blue
+  PRIMARY_DARK: '#002147',   // Navy brand
+  ACCENT_LIGHT: '#b3d9ff',   // Light blue accents
+
   SECONDARY: '#333',
   BACKGROUND: '#f5f5f5',
   WHITE: '#ffffff',

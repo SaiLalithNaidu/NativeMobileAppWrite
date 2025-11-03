@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Dimensions, FlatList, Image, StyleSheet, View } from "react-native";
+import { COLORS } from '../../src/utils/constants';
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -12,11 +13,12 @@ const images = [
 export default function ImageCarousel() {
   const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef = useRef(null);
+  const [containerWidth, setContainerWidth] = useState(SCREEN_WIDTH);
 
   // Track manual scroll
   const handleScroll = (event) => {
     const contentOffsetX = event.nativeEvent.contentOffset.x;
-    const index = Math.round(contentOffsetX / SCREEN_WIDTH);
+    const index = Math.round(contentOffsetX / containerWidth);
     setActiveIndex(index);
   };
 
@@ -32,7 +34,13 @@ export default function ImageCarousel() {
   }, [activeIndex]);
 
   return (
-    <View style={styles.container}>
+    <View
+      style={styles.container}
+      onLayout={(e) => {
+        const w = e.nativeEvent.layout.width;
+        if (w && Math.abs(w - containerWidth) > 1) setContainerWidth(w);
+      }}
+    >
       <FlatList
         ref={flatListRef}
         data={images}
@@ -42,10 +50,11 @@ export default function ImageCarousel() {
         showsHorizontalScrollIndicator={false}
         onScroll={handleScroll}
         scrollEventThrottle={16}
-        snapToInterval={SCREEN_WIDTH}
+        snapToInterval={containerWidth}
         decelerationRate="fast"
+        style={{ backgroundColor: 'transparent' }}
         renderItem={({ item }) => (
-          <View style={styles.imageWrapper}>
+          <View style={[styles.imageWrapper, { width: containerWidth }]}>
             <Image source={{ uri: item.uri }} style={styles.image} />
           </View>
         )}
@@ -68,14 +77,15 @@ const styles = StyleSheet.create({
   container: {
     width: "100%",
     alignItems: "center",
+    backgroundColor: 'transparent',
   },
   imageWrapper: {
-    width: SCREEN_WIDTH,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: 'transparent',
   },
   image: {
-    width: "90%",
+    width: "100%",
     height: 150,
     resizeMode: "cover",
     borderRadius: 10,
@@ -89,7 +99,7 @@ const styles = StyleSheet.create({
     height: 8,
     width: 8,
     borderRadius: 4,
-    backgroundColor: "#333",
+    backgroundColor: COLORS.PRIMARY,
     marginHorizontal: 4,
   },
 });

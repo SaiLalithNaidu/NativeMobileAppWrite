@@ -18,6 +18,7 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from "react";
 import { ActivityIndicator, FlatList, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { COLORS } from '../../src/utils/constants';
 import { useSearch } from '../hooks/useSearch';
 
 const Search = () => {
@@ -49,7 +50,7 @@ const Search = () => {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="coral" />
+  <ActivityIndicator size="large" color={COLORS.PRIMARY} />
         <Text style={{ marginTop: 8, color: '#666' }}>Loading data…</Text>
       </View>
     );
@@ -59,7 +60,7 @@ const Search = () => {
   if (error) {
     return (
       <View style={styles.center}>
-        <FontAwesome5 name="exclamation-circle" size={48} color="coral" />
+  <FontAwesome5 name="exclamation-circle" size={48} color={COLORS.PRIMARY} />
         <Text style={{ marginTop: 16, color: '#666', textAlign: 'center', paddingHorizontal: 20 }}>
           {error}
         </Text>
@@ -222,7 +223,7 @@ const styles = StyleSheet.create({
   price: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: 'coral',
+    color: COLORS.PRIMARY,
   },
   originalPrice: {
     fontSize: 14,

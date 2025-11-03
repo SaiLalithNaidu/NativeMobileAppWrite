@@ -11,6 +11,7 @@
 import { FontAwesome5 } from '@expo/vector-icons';
 import React from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { COLORS } from '../../../src/utils/constants';
 
 export const CartItem = ({ item, onIncrease, onDecrease }) => {
   if (!item) return null;
@@ -122,7 +123,7 @@ const styles = StyleSheet.create({
   quantityControl: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'coral',
+    backgroundColor: COLORS.PRIMARY,
     borderRadius: 6,
     paddingHorizontal: 4,
     paddingVertical: 4,
