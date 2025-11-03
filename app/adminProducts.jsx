@@ -2,7 +2,7 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { collection, getDocs, query, where } from 'firebase/firestore';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
     FlatList,
@@ -10,6 +10,7 @@ import {
     RefreshControl,
     StyleSheet,
     Text,
+    TextInput,
     TouchableOpacity,
     View
 } from 'react-native';
@@ -22,6 +23,7 @@ const AdminProductsScreen = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   
   // Extract simple params
   const { companyId, companyName, categoryId, categoryName } = params;
@@ -86,6 +88,20 @@ const AdminProductsScreen = () => {
   const onRefresh = () => {
     fetchProducts(true);
   };
+
+  // Filter products based on search query
+  const filteredProducts = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return products;
+    }
+
+    const query = searchQuery.toLowerCase().trim();
+    return products.filter(product => 
+      product.title?.toLowerCase().includes(query) ||
+      product.description?.toLowerCase().includes(query) ||
+      product.price?.toString().includes(query)
+    );
+  }, [products, searchQuery]);
 
   const handleEditProduct = (product) => {
     // Navigate to dedicated edit product screen
@@ -183,13 +199,36 @@ const AdminProductsScreen = () => {
               <Text style={styles.companyNameSmall}>{companyName}</Text>
             )}
             <Text style={styles.subtitleSmall}>
-              {products.length} products • Category: {categoryName || 'N/A'}
+              {filteredProducts.length} of {products.length} products • Category: {categoryName || 'N/A'}
             </Text>
           </View>
         </View>
 
+        {/* Search Bar */}
+        <View style={styles.searchContainer}>
+          <FontAwesome5 name="search" size={18} color="#999" style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search products by name, description, or price..."
+            placeholderTextColor="#999"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            autoCorrect={false}
+            autoCapitalize="none"
+            returnKeyType="search"
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity 
+              onPress={() => setSearchQuery('')}
+              style={styles.clearButton}
+            >
+              <FontAwesome5 name="times-circle" size={18} color="#999" />
+            </TouchableOpacity>
+          )}
+        </View>
+
         <FlatList
-          data={products}
+          data={filteredProducts}
           keyExtractor={(item) => item.id}
           renderItem={renderProductItemGrid}
           numColumns={2}
@@ -205,12 +244,16 @@ const AdminProductsScreen = () => {
           }
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <FontAwesome5 name="inbox" size={60} color="#ccc" />
+              <FontAwesome5 name={searchQuery ? "search" : "inbox"} size={60} color="#ccc" />
               <Text style={styles.emptyText}>
-                No products found in this category
+                {searchQuery 
+                  ? `No products found for "${searchQuery}"` 
+                  : "No products found in this category"}
               </Text>
               <Text style={styles.emptySubtext}>
-                Add products using the Admin Panel
+                {searchQuery 
+                  ? "Try a different search term" 
+                  : "Add products using the Admin Panel"}
               </Text>
             </View>
           }
@@ -286,6 +329,37 @@ const styles = StyleSheet.create({
   subtitleSmall: {
     fontSize: 12,
     color: '#666',
+  },
+  // Search Bar Styles
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    marginHorizontal: 16,
+    marginVertical: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    color: '#333',
+    paddingVertical: 4,
+  },
+  clearButton: {
+    padding: 4,
+    marginLeft: 8,
   },
   // Grid View Styles
   gridContainer: {

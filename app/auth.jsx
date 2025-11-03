@@ -1,6 +1,8 @@
+import { FontAwesome5 } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Link, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function AuthScreen()
@@ -9,6 +11,7 @@ export default function AuthScreen()
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const router = useRouter();
     const { login } = useAuth();
 
@@ -34,131 +37,253 @@ export default function AuthScreen()
     };
 
     return (
-        <KeyboardAvoidingView 
-            behavior={Platform.OS === "ios" ? "padding" : "height"} 
+        <LinearGradient
+            colors={['#002147', '#004080', '#0066b3']}
             style={styles.container}
         >
-            <View style={styles.formContainer}>
-                <Text style={styles.title}>Welcome Back</Text>
-                <Text style={styles.subtitle}>Sign in to continue</Text>
-
-                {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-                <TextInput 
-                    placeholder='Email' 
-                    value={email}
-                    onChangeText={setEmail}
-                    autoCapitalize='none'
-                    keyboardType='email-address'
-                    style={styles.input}
-                />
-
-                <TextInput 
-                    placeholder='Password' 
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry={true} 
-                    style={styles.input}
-                />
-
-                <TouchableOpacity 
-                    style={[styles.button, loading && styles.buttonDisabled]}
-                    onPress={handleLogin}
-                    disabled={loading}
-                >
-                    {loading ? (
-                        <ActivityIndicator color="white" />
-                    ) : (
-                        <Text style={styles.buttonText}>Login</Text>
-                    )}
-                </TouchableOpacity>
-
-                <View style={styles.linkContainer}>
-                    <Text style={styles.linkText}>{"Don't have an account? "}</Text>
-                    <Link href="/signup" asChild>
-                        <Text style={styles.link}>Sign Up</Text>
-                    </Link>
+            <KeyboardAvoidingView 
+                behavior={Platform.OS === "ios" ? "padding" : "height"} 
+                style={styles.keyboardView}
+            >
+                <View style={styles.logoContainer}>
+                    <Image 
+                        source={require('../assets/images/app-logo.png')}
+                        style={styles.logo}
+                        resizeMode="contain"
+                    />
+                    <Text style={styles.brandName}>Ramesh Aqua</Text>
+                    <Text style={styles.tagline}>Fresh & Quality Seafood</Text>
                 </View>
-            </View>
-        </KeyboardAvoidingView>
+
+                <View style={styles.formContainer}>
+                    <Text style={styles.title}>Welcome Back!</Text>
+                    <Text style={styles.subtitle}>Sign in to your account</Text>
+
+                    {error ? (
+                        <View style={styles.errorContainer}>
+                            <FontAwesome5 name="exclamation-circle" size={16} color="#d32f2f" />
+                            <Text style={styles.errorText}>{error}</Text>
+                        </View>
+                    ) : null}
+
+                    <View style={styles.inputContainer}>
+                        <FontAwesome5 name="envelope" size={18} color="#666" style={styles.inputIcon} />
+                        <TextInput 
+                            placeholder='Email address' 
+                            placeholderTextColor="#999"
+                            value={email}
+                            onChangeText={setEmail}
+                            autoCapitalize='none'
+                            keyboardType='email-address'
+                            style={styles.input}
+                        />
+                    </View>
+
+                    <View style={styles.inputContainer}>
+                        <FontAwesome5 name="lock" size={18} color="#666" style={styles.inputIcon} />
+                        <TextInput 
+                            placeholder='Password' 
+                            placeholderTextColor="#999"
+                            value={password}
+                            onChangeText={setPassword}
+                            secureTextEntry={!showPassword} 
+                            style={styles.input}
+                        />
+                        <TouchableOpacity 
+                            onPress={() => setShowPassword(!showPassword)}
+                            style={styles.eyeIcon}
+                        >
+                            <FontAwesome5 
+                                name={showPassword ? "eye" : "eye-slash"} 
+                                size={18} 
+                                color="#666" 
+                            />
+                        </TouchableOpacity>
+                    </View>
+
+                    <TouchableOpacity 
+                        style={[styles.button, loading && styles.buttonDisabled]}
+                        onPress={handleLogin}
+                        disabled={loading}
+                    >
+                        <LinearGradient
+                            colors={['#0080ff', '#0066cc']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={styles.buttonGradient}
+                        >
+                            {loading ? (
+                                <ActivityIndicator color="white" />
+                            ) : (
+                                <>
+                                    <Text style={styles.buttonText}>Sign In</Text>
+                                    <FontAwesome5 name="arrow-right" size={16} color="white" />
+                                </>
+                            )}
+                        </LinearGradient>
+                    </TouchableOpacity>
+
+                    <View style={styles.divider}>
+                        <View style={styles.dividerLine} />
+                        <Text style={styles.dividerText}>OR</Text>
+                        <View style={styles.dividerLine} />
+                    </View>
+
+                    <View style={styles.linkContainer}>
+                        <Text style={styles.linkText}>Don&apos;t have an account? </Text>
+                        <Link href="/signup" asChild>
+                            <TouchableOpacity>
+                                <Text style={styles.link}>Sign Up</Text>
+                            </TouchableOpacity>
+                        </Link>
+                    </View>
+                </View>
+            </KeyboardAvoidingView>
+        </LinearGradient>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
-        flex: 1, 
-        justifyContent: 'center', 
+        flex: 1,
+    },
+    keyboardView: {
+        flex: 1,
+        justifyContent: 'center',
+        padding: 20,
+    },
+    logoContainer: {
         alignItems: 'center',
-        backgroundColor: '#f5f5f5'
+        marginBottom: 40,
+    },
+    logo: {
+        width: 120,
+        height: 120,
+        marginBottom: 16,
+    },
+    brandName: {
+        fontSize: 32,
+        fontWeight: 'bold',
+        color: 'white',
+        marginBottom: 4,
+        textShadowColor: 'rgba(0, 0, 0, 0.3)',
+        textShadowOffset: { width: 1, height: 1 },
+        textShadowRadius: 3,
+    },
+    tagline: {
+        fontSize: 14,
+        color: '#b3d9ff',
+        fontWeight: '500',
     },
     formContainer: {
-        width: '85%',
-        maxWidth: 400,
-        padding: 20,
         backgroundColor: 'white',
-        borderRadius: 10,
+        borderRadius: 24,
+        padding: 24,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 8,
     },
     title: {
         fontSize: 28,
         fontWeight: 'bold',
         marginBottom: 8,
         textAlign: 'center',
-        color: '#333'
+        color: '#002147',
     },
     subtitle: {
-        fontSize: 16,
+        fontSize: 15,
         marginBottom: 24,
         textAlign: 'center',
-        color: '#666'
+        color: '#666',
+    },
+    inputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        height: 56,
+        borderColor: '#e0e0e0',
+        borderWidth: 1.5,
+        borderRadius: 12,
+        marginBottom: 16,
+        paddingHorizontal: 16,
+        backgroundColor: '#fafafa',
+    },
+    inputIcon: {
+        marginRight: 12,
     },
     input: {
-        height: 50,
-        borderColor: '#ddd',
-        borderWidth: 1,
-        marginBottom: 16,
-        paddingHorizontal: 15,
-        borderRadius: 8,
+        flex: 1,
         fontSize: 16,
-        backgroundColor: '#fafafa'
+        color: '#333',
+    },
+    eyeIcon: {
+        padding: 8,
     },
     button: {
-        backgroundColor: 'coral',
-        height: 50,
-        borderRadius: 8,
+        height: 56,
+        borderRadius: 12,
+        overflow: 'hidden',
+        marginTop: 8,
+    },
+    buttonGradient: {
+        flex: 1,
+        flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
-        marginTop: 8
+        gap: 8,
     },
     buttonDisabled: {
-        opacity: 0.6
+        opacity: 0.6,
     },
     buttonText: {
         color: 'white',
         fontSize: 18,
-        fontWeight: '600'
+        fontWeight: '700',
+        letterSpacing: 0.5,
+    },
+    errorContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#ffebee',
+        padding: 12,
+        borderRadius: 8,
+        marginBottom: 16,
+        gap: 8,
     },
     errorText: {
-        color: 'red',
-        marginBottom: 12,
-        textAlign: 'center'
+        color: '#d32f2f',
+        fontSize: 14,
+        flex: 1,
+    },
+    divider: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: 24,
+    },
+    dividerLine: {
+        flex: 1,
+        height: 1,
+        backgroundColor: '#e0e0e0',
+    },
+    dividerText: {
+        marginHorizontal: 16,
+        color: '#999',
+        fontSize: 14,
+        fontWeight: '600',
     },
     linkContainer: {
         flexDirection: 'row',
         justifyContent: 'center',
-        marginTop: 20
+        alignItems: 'center',
     },
     linkText: {
         color: '#666',
-        fontSize: 16
+        fontSize: 15,
     },
     link: {
-        color: 'coral',
-        fontSize: 16,
-        fontWeight: '600'
-    }
+        color: '#0080ff',
+        fontSize: 15,
+        fontWeight: '700',
+    },
 });

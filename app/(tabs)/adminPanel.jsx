@@ -946,7 +946,7 @@ export default function AdminPanel() {
         {isEditMode ? (
           <View style={styles.buttonRow}>
             <TouchableOpacity 
-              style={[styles.button, styles.updateButton, { flex: 1, marginRight: 8 }]} 
+              style={[styles.button, styles.updateButton, { flex: 1 }]} 
               onPress={handleUpdateProduct}
             >
               <Text style={styles.buttonText}>
@@ -954,7 +954,7 @@ export default function AdminPanel() {
               </Text>
             </TouchableOpacity>
             <TouchableOpacity 
-              style={[styles.button, styles.cancelButton, { flex: 1, marginLeft: 8 }]} 
+              style={[styles.button, styles.cancelButton, { flex: 1 }]} 
               onPress={handleCancelEdit}
             >
               <Text style={styles.buttonText}>Cancel</Text>
@@ -999,7 +999,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
-    paddingBottom: 40,
+    paddingBottom: 100,
   },
   sectionTitle: {
     fontSize: 22,
@@ -1142,6 +1142,8 @@ const styles = StyleSheet.create({
     buttonRow: {
       flexDirection: 'row',
       marginTop: 8,
+      gap: 10,
+      marginBottom: 20,
     },
     updateButton: {
       backgroundColor: '#28a745',

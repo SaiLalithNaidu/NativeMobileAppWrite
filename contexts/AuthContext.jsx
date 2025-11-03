@@ -74,6 +74,7 @@ export function AuthProvider({ children }) {
       await signOut(auth);
       setUser(null);
       setIsAuthenticated(false);
+      // Note: Cart will be automatically cleared by CartContext when user becomes null
       return { success: true };
     } catch (error) {
       console.error('Logout error:', error);

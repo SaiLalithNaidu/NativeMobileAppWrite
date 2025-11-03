@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import Toast from 'react-native-toast-message';
+import { useAuth } from './AuthContext';
 
 const CartContext = createContext();
 
@@ -15,24 +16,34 @@ export const useCart = () => {
 export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth(); // Get current user from AuthContext
 
-  // Load cart from AsyncStorage on mount
+  // Load cart from AsyncStorage when user changes
   useEffect(() => {
-    loadCart();
-  }, []);
+    if (user) {
+      loadCart(user.uid);
+    } else {
+      // Clear cart when user logs out
+      setCartItems([]);
+      setLoading(false);
+    }
+  }, [user]);
 
   // Save cart to AsyncStorage whenever it changes
   useEffect(() => {
-    if (!loading) {
-      saveCart();
+    if (!loading && user) {
+      saveCart(user.uid);
     }
-  }, [cartItems]);
+  }, [cartItems, user]);
 
-  const loadCart = async () => {
+  const loadCart = async (userId) => {
     try {
-      const savedCart = await AsyncStorage.getItem('cart');
+      const cartKey = `cart_${userId}`; // User-specific cart key
+      const savedCart = await AsyncStorage.getItem(cartKey);
       if (savedCart) {
         setCartItems(JSON.parse(savedCart));
+      } else {
+        setCartItems([]); // Empty cart for new user
       }
     } catch (error) {
       console.error('Error loading cart:', error);
@@ -41,9 +52,10 @@ export const CartProvider = ({ children }) => {
     }
   };
 
-  const saveCart = async () => {
+  const saveCart = async (userId) => {
     try {
-      await AsyncStorage.setItem('cart', JSON.stringify(cartItems));
+      const cartKey = `cart_${userId}`; // User-specific cart key
+      await AsyncStorage.setItem(cartKey, JSON.stringify(cartItems));
     } catch (error) {
       console.error('Error saving cart:', error);
     }
@@ -115,8 +127,17 @@ export const CartProvider = ({ children }) => {
     );
   };
 
-  const clearCart = () => {
+  const clearCart = async () => {
     setCartItems([]);
+    // Also clear from AsyncStorage
+    if (user) {
+      try {
+        const cartKey = `cart_${user.uid}`;
+        await AsyncStorage.removeItem(cartKey);
+      } catch (error) {
+        console.error('Error clearing cart from storage:', error);
+      }
+    }
     Toast.show({
       type: 'info',
       text1: 'Cart Cleared',

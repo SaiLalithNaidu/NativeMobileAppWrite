@@ -1,30 +1,21 @@
 import { Stack } from "expo-router";
-import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import { useState } from 'react';
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider } from "../contexts/AuthContext";
 import { CartProvider } from "../contexts/CartContext";
-
-// Keep the splash screen visible while we fetch resources
-SplashScreen.preventAutoHideAsync().catch(() => {
-  // Handle the case where splash screen is already hidden
-});
+import AnimatedSplash from "./components/AnimatedSplash";
 
 export default function RootLayout() 
 {
-  useEffect(() => {
-    // Hide splash screen after 2 seconds
-    const timer = setTimeout(async () => {
-      try {
-        await SplashScreen.hideAsync();
-      } catch (error) {
-        // Splash screen already hidden or not available
-        console.log('Splash screen hide error:', error);
-      }
-    }, 2000);
+  const [isReady, setIsReady] = useState(false);
 
-    return () => clearTimeout(timer);
-  }, []);
+  if (!isReady) {
+    return (
+      <AnimatedSplash onFinish={() => setIsReady(true)}>
+        {/* This will be shown after splash finishes */}
+      </AnimatedSplash>
+    );
+  }
 
   return  (
     <AuthProvider>
