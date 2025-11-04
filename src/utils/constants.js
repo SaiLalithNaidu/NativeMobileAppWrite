@@ -7,6 +7,16 @@ export const COLLECTIONS = {
   COMPANIES: 'companies',
   CATEGORIES: 'categories',
   PRODUCTS: 'products',
+  ORDERS: 'orders',
+};
+
+// Shop Configuration
+export const SHOP_CONFIG = {
+  name: 'Ramesh Aqua',
+  address: 'Shop Address Line 1, City, State - Pincode',
+  phone: '+91 1234567890',
+  email: 'rameshaqua@example.com',
+  gstin: 'GSTIN1234567890', // Optional GST number
 };
 
 // View States
@@ -129,4 +139,5 @@ export default {
   RADIUS,
   ERROR_MESSAGES,
   SUCCESS_MESSAGES,
+  SHOP_CONFIG,
 };

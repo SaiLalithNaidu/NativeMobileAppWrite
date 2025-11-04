@@ -1,6 +1,6 @@
 import { AntDesign, FontAwesome5 } from '@expo/vector-icons';
 import { Tabs, useRouter } from "expo-router";
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
 import { COLORS } from '../../src/utils/constants';
@@ -31,6 +31,16 @@ export default function TabsLayout() {
           options={{ 
             title: "Home", 
             tabBarIcon:({color})=> <FontAwesome5 name="home" size={18} color={color} />,
+            headerLeft: () => (
+              <View style={styles.logoContainer}>
+                <Image 
+                  source={require('../../assets/images/app-logo.png')}
+                  style={styles.logoImage}
+                  resizeMode="contain"
+                />
+                <Text style={styles.logoText}>Ramesh Aqua</Text>
+              </View>
+            ),
             headerRight: () => (
               <View style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
                 <Text style={{ flexDirection: "row", alignItems: "center", fontSize: 12, paddingRight: 8, color: '#666' }}>Hi, {user ? user.email : 'Guest'}</Text>
@@ -38,7 +48,8 @@ export default function TabsLayout() {
                   <AntDesign name="logout" size={22} color="black" style={{ marginRight: 15 }} />
                 </TouchableOpacity>
               </View>
-            )
+            ),
+            headerTitle: ""
           }} 
         />
         <Tabs.Screen 
@@ -81,6 +92,13 @@ export default function TabsLayout() {
             tabBarIcon:({color})=><FontAwesome5 name="tools" size={18} color={color} /> 
           }} 
         />
+        <Tabs.Screen 
+          name="orders" 
+          options={{ 
+            title: "Orders", 
+            tabBarIcon:({color})=><FontAwesome5 name="receipt" size={18} color={color} /> 
+          }} 
+        />
     </Tabs>
   );
 }
@@ -104,5 +122,21 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 10,
     fontWeight: '700',
+  },
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 15,
+    gap: 8,
+  },
+  logoImage: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+  },
+  logoText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: COLORS.PRIMARY_DARK,
   },
 });

@@ -114,8 +114,10 @@ const Search = () => {
             )}
             <View style={styles.productCardInfo}>
               <Text style={styles.productName} numberOfLines={2}>{item.title || 'Unnamed Product'}</Text>
-              <Text style={styles.metaText} numberOfLines={1}>
-                {companyMap.get(item.companyId) || 'Unknown Company'} • {categoryMap.get(item.categoryId) || 'Unknown Category'}
+              <Text style={styles.metaText} numberOfLines={2}>
+                {companyMap.get(item.companyId) || 'Unknown Company'}
+                {' \u2022 '}
+                {categoryMap.get(item.categoryId) || 'Unknown Category'}
               </Text>
               <View style={styles.priceContainer}>
                 {item.originalPrice ? (
@@ -209,6 +211,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#777',
     marginBottom: 6,
+    flexWrap: 'wrap',
+    width: '100%',
+    lineHeight: 16,
   },
   descriptionText: {
     fontSize: 13,

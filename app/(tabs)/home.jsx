@@ -24,10 +24,10 @@ import ImageCarousel from '../components/imageCarousel';
 const CompaniesScreen = ({ companies, onCompanySelect, getCategoryCount, getProductCount }) => {
   return (
       <View style={styles.companiesListContainer}>
-        <View style={styles.sectionHeader}>
+        {/* <View style={styles.sectionHeader}>
           <FontAwesome5 name="building" size={20} color="#002147" />
           <Text style={styles.sectionTitle}>Our Companies</Text>
-        </View>
+        </View> */}
         <FlatList
       data={companies}
       keyExtractor={(item) => item.id}

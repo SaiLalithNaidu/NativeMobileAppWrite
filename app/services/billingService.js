@@ -35,11 +35,25 @@ export const generateOrderId = () => {
  * @param {string} params.customerPhone - Customer phone (optional)
  * @param {Array} params.items - Cart items
  * @param {Object} params.summary - Cart summary from cartService
+ * @param {number} params.paidAmount - Amount paid by customer (optional, defaults to 0)
  * @returns {Object} Order object
  */
-export const createOrderObject = ({ customerName, customerEmail, customerPhone, items, summary }) => {
+export const createOrderObject = ({ customerName, customerEmail, customerPhone, items, summary, paidAmount = 0 }) => {
   const orderId = generateOrderId();
   const orderDate = new Date().toISOString();
+  
+  // Calculate payment status
+  const paid = parseFloat(paidAmount) || 0;
+  const pending = summary.total - paid;
+  let paymentStatus = 'pending';
+  
+  if (paid === 0) {
+    paymentStatus = 'pending';
+  } else if (paid >= summary.total) {
+    paymentStatus = 'paid';
+  } else {
+    paymentStatus = 'partial';
+  }
 
   return {
     orderId,
@@ -67,8 +81,13 @@ export const createOrderObject = ({ customerName, customerEmail, customerPhone, 
       savings: summary.savings,
       itemCount: summary.itemCount,
     },
+    payment: {
+      paidAmount: paid,
+      pendingAmount: pending,
+      lastUpdated: orderDate,
+    },
     status: 'pending', // pending, confirmed, delivered, cancelled
-    paymentStatus: 'pending', // pending, paid, failed
+    paymentStatus: paymentStatus, // pending, partial, paid
     createdAt: orderDate,
   };
 };
