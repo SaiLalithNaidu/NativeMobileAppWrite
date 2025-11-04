@@ -1,19 +1,30 @@
 /**
  * Checkout Screen
- * Billing form where user enters their details before placing order
+ * 
+ * Purpose: Customer billing form for order placement
+ * 
+ * Features:
+ * - Collect customer information (name, email, phone)
+ * - Display order summary with GST calculation
+ * - Support partial payment at checkout
+ * - Real-time payment breakdown visualization
+ * - Form validation before order creation
+ * - Integration with Firebase for order persistence
+ * 
+ * @module CheckoutScreen
  */
 
 import { router } from 'expo-router';
 import { useState } from 'react';
 import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
@@ -21,24 +32,77 @@ import { useCart } from '../contexts/CartContext';
 import { COLORS } from '../src/utils/constants';
 import { createOrderObject, saveOrderToDatabase } from './services/billingService';
 import { getCartSummary } from './services/cartService';
+import { isValidEmail, isValidPhone } from './services/validationService';
+
+// Validation helpers are imported from app/services/validationService
+
+// ==================== SUB-COMPONENTS ====================
+
+/**
+ * Screen header with title and subtitle
+ */
+const CheckoutHeader = () => (
+  <View style={styles.header}>
+    <Text style={styles.headerTitle}>Billing Details</Text>
+    <Text style={styles.headerSubtitle}>
+      Enter your details to complete the order
+    </Text>
+  </View>
+);
+
+/**
+ * Payment breakdown showing total, paid, and remaining amounts
+ */
+const PaymentBreakdown = ({ total, paidAmount }) => {
+  if (!paidAmount || isNaN(parseFloat(paidAmount)) || parseFloat(paidAmount) <= 0) {
+    return null;
+  }
+
+  const paid = parseFloat(paidAmount);
+  const remaining = Math.max(0, total - paid);
+
+  return (
+    <View style={styles.paymentBreakdown}>
+      <View style={styles.breakdownRow}>
+        <Text style={styles.breakdownLabel}>Total Bill:</Text>
+        <Text style={styles.breakdownTotal}>₹{total.toFixed(2)}</Text>
+      </View>
+      <View style={[styles.breakdownRow, styles.paidRow]}>
+        <Text style={styles.breakdownLabel}>✓ Paid Now:</Text>
+        <Text style={styles.breakdownPaid}>₹{paid.toFixed(2)}</Text>
+      </View>
+      <View style={[styles.breakdownRow, styles.pendingRow]}>
+        <Text style={styles.breakdownLabel}>⚠ Remaining:</Text>
+        <Text style={styles.breakdownPending}>₹{remaining.toFixed(2)}</Text>
+      </View>
+    </View>
+  );
+};
+
+// ==================== MAIN COMPONENT ====================
 
 export default function CheckoutScreen() {
+  // ========== Hooks ==========
   const { cartItems } = useCart();
   
-  // Form state
+  // ========== Component State ==========
   const [customerName, setCustomerName] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [paidAmount, setPaidAmount] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Get cart summary
+  // ========== Computed Values ==========
   const cartSummary = getCartSummary(cartItems);
 
+  // ========== Form Validation ==========
+
   /**
-   * Validate form inputs
+   * Validate all form inputs before submission
+   * @returns {boolean} True if form is valid
    */
   const validateForm = () => {
+    // Validate customer name (required)
     if (!customerName.trim()) {
       Toast.show({
         type: 'error',
@@ -48,6 +112,7 @@ export default function CheckoutScreen() {
       return false;
     }
 
+    // Validate email format (if provided)
     if (customerEmail && !isValidEmail(customerEmail)) {
       Toast.show({
         type: 'error',
@@ -57,6 +122,7 @@ export default function CheckoutScreen() {
       return false;
     }
 
+    // Validate phone format (if provided)
     if (customerPhone && !isValidPhone(customerPhone)) {
       Toast.show({
         type: 'error',
@@ -66,9 +132,10 @@ export default function CheckoutScreen() {
       return false;
     }
 
-    // Validate paid amount
+    // Validate paid amount (if provided)
     if (paidAmount.trim()) {
       const paid = parseFloat(paidAmount);
+      
       if (isNaN(paid) || paid < 0) {
         Toast.show({
           type: 'error',
@@ -77,6 +144,7 @@ export default function CheckoutScreen() {
         });
         return false;
       }
+      
       if (paid > cartSummary.total) {
         Toast.show({
           type: 'error',
@@ -90,32 +158,21 @@ export default function CheckoutScreen() {
     return true;
   };
 
-  /**
-   * Validate email format
-   */
-  const isValidEmail = (email) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
+  // ========== Event Handlers ==========
 
   /**
-   * Validate phone format (10 digits)
-   */
-  const isValidPhone = (phone) => {
-    const phoneRegex = /^[0-9]{10}$/;
-    return phoneRegex.test(phone);
-  };
-
-  /**
-   * Handle place order button press
+   * Handle order placement
+   * Validates form, creates order, saves to Firebase, and navigates to confirmation
    */
   const handlePlaceOrder = async () => {
     console.log('Place Order button pressed');
     
+    // Validate form inputs
     if (!validateForm()) {
       return;
     }
 
+    // Check cart is not empty
     if (cartItems.length === 0) {
       Toast.show({
         type: 'error',
@@ -128,10 +185,10 @@ export default function CheckoutScreen() {
     try {
       setIsProcessing(true);
 
-      // Calculate paid amount
+      // Parse paid amount (default to 0 if not provided)
       const paidAmountValue = paidAmount.trim() ? parseFloat(paidAmount) : 0;
 
-      // Create order object
+      // Create order data object
       const orderData = createOrderObject({
         customerName: customerName.trim(),
         customerEmail: customerEmail.trim() || undefined,
@@ -143,11 +200,11 @@ export default function CheckoutScreen() {
 
       console.log('Order created:', orderData.orderId);
 
-      // Save order to Firebase
+      // Save to Firebase
       const docId = await saveOrderToDatabase(orderData);
       console.log('Order saved to Firebase with ID:', docId);
 
-      // Navigate to order confirmation screen with order data
+      // Navigate to confirmation screen
       router.push({
         pathname: '/orderConfirmation',
         params: {
@@ -168,6 +225,8 @@ export default function CheckoutScreen() {
     }
   };
 
+  // ========== Render ==========
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <KeyboardAvoidingView
@@ -180,17 +239,12 @@ export default function CheckoutScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.headerTitle}>Billing Details</Text>
-            <Text style={styles.headerSubtitle}>
-              Enter your details to complete the order
-            </Text>
-          </View>
+          {/* Header Section */}
+          <CheckoutHeader />
 
-          {/* Form */}
+          {/* Customer Information Form */}
           <View style={styles.form}>
-            {/* Customer Name (Required) */}
+            {/* Full Name - Required Field */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>
                 Full Name <Text style={styles.required}>*</Text>
@@ -205,7 +259,7 @@ export default function CheckoutScreen() {
               />
             </View>
 
-            {/* Customer Email (Optional) */}
+            {/* Email - Optional Field */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Email Address (Optional)</Text>
               <TextInput
@@ -219,7 +273,7 @@ export default function CheckoutScreen() {
               />
             </View>
 
-            {/* Customer Phone (Optional) */}
+            {/* Phone - Optional Field */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Phone Number (Optional)</Text>
               <TextInput
@@ -234,59 +288,23 @@ export default function CheckoutScreen() {
             </View>
           </View>
 
-          {/* Order Summary */}
+          {/* Order Summary Section */}
           <View style={styles.summaryCard}>
             <Text style={styles.summaryTitle}>Order Summary</Text>
-            
-            {/* Paid Amount Input */}
-            <View style={styles.paymentInputGroup}>
-              <Text style={styles.paymentLabel}>💰 Paid Amount (Optional)</Text>
-              <Text style={styles.paymentHint}>
-                Enter the amount customer is paying now. Remaining amount will be calculated automatically.
-              </Text>
-              <View style={styles.amountInputContainer}>
-                <Text style={styles.currencySymbol}>₹</Text>
-                <TextInput
-                  style={styles.amountInput}
-                  placeholder="0.00"
-                  value={paidAmount}
-                  onChangeText={setPaidAmount}
-                  keyboardType="decimal-pad"
-                  editable={!isProcessing}
-                />
-              </View>
-              
-              {/* Real-time Payment Breakdown */}
-              {paidAmount.trim() && !isNaN(parseFloat(paidAmount)) && parseFloat(paidAmount) > 0 && (
-                <View style={styles.paymentBreakdown}>
-                  <View style={styles.breakdownRow}>
-                    <Text style={styles.breakdownLabel}>Total Bill:</Text>
-                    <Text style={styles.breakdownTotal}>₹{cartSummary.total.toFixed(2)}</Text>
-                  </View>
-                  <View style={[styles.breakdownRow, styles.paidRow]}>
-                    <Text style={styles.breakdownLabel}>✓ Paid Now:</Text>
-                    <Text style={styles.breakdownPaid}>₹{parseFloat(paidAmount).toFixed(2)}</Text>
-                  </View>
-                  <View style={[styles.breakdownRow, styles.pendingRow]}>
-                    <Text style={styles.breakdownLabel}>⚠ Remaining:</Text>
-                    <Text style={styles.breakdownPending}>
-                      ₹{Math.max(0, cartSummary.total - parseFloat(paidAmount)).toFixed(2)}
-                    </Text>
-                  </View>
-                </View>
-              )}
-            </View>
 
+            {/* Subtotal Row */}
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Items ({cartSummary.itemCount})</Text>
               <Text style={styles.summaryValue}>₹{cartSummary.subtotal.toFixed(2)}</Text>
             </View>
 
+            {/* GST Row */}
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>GST (18%)</Text>
               <Text style={styles.summaryValue}>₹{cartSummary.gst.toFixed(2)}</Text>
             </View>
 
+            {/* Delivery Row */}
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Delivery</Text>
               <Text style={[styles.summaryValue, cartSummary.delivery === 0 && styles.freeText]}>
@@ -294,11 +312,13 @@ export default function CheckoutScreen() {
               </Text>
             </View>
 
+            {/* Total Amount Row */}
             <View style={[styles.summaryRow, styles.totalRow]}>
               <Text style={styles.totalLabel}>Total Amount</Text>
               <Text style={styles.totalValue}>₹{cartSummary.total.toFixed(2)}</Text>
             </View>
 
+            {/* Savings Badge */}
             {cartSummary.savings > 0 && (
               <View style={styles.savingsBox}>
                 <Text style={styles.savingsText}>
@@ -307,9 +327,35 @@ export default function CheckoutScreen() {
               </View>
             )}
           </View>
+
+          {/* Paid Amount Input with Real-time Breakdown - Separate Card */}
+          <View style={styles.paymentCard}>
+            <Text style={styles.paymentLabel}>💰 Paid Amount (Optional)</Text>
+            <Text style={styles.paymentHint}>
+              Enter the amount customer is paying now. Remaining amount will be calculated automatically.
+            </Text>
+            
+            <View style={styles.amountInputContainer}>
+              <Text style={styles.currencySymbol}>₹</Text>
+              <TextInput
+                style={styles.amountInput}
+                placeholder="0.00"
+                value={paidAmount}
+                onChangeText={setPaidAmount}
+                keyboardType="decimal-pad"
+                editable={!isProcessing}
+              />
+            </View>
+            
+            {/* Dynamic Payment Breakdown */}
+            <PaymentBreakdown 
+              total={cartSummary.total} 
+              paidAmount={paidAmount} 
+            />
+          </View>
         </ScrollView>
 
-        {/* Place Order Button */}
+        {/* Fixed Footer with Place Order Button */}
         <View style={styles.footer}>
           <TouchableOpacity
             style={[styles.placeOrderButton, isProcessing && styles.buttonDisabled]}
@@ -317,7 +363,10 @@ export default function CheckoutScreen() {
             disabled={isProcessing}
           >
             <Text style={styles.buttonText}>
-              {isProcessing ? 'Processing...' : `Place Order • ₹${cartSummary.total.toFixed(2)}`}
+              {isProcessing 
+                ? 'Processing...' 
+                : `Place Order • ₹${cartSummary.total.toFixed(2)}`
+              }
             </Text>
           </TouchableOpacity>
         </View>
@@ -325,6 +374,8 @@ export default function CheckoutScreen() {
     </SafeAreaView>
   );
 }
+
+// ==================== STYLES ====================
 
 const styles = StyleSheet.create({
   container: {
@@ -339,7 +390,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
-    paddingBottom: 100,
+    paddingBottom: 120,
   },
   header: {
     marginBottom: 24,
@@ -486,14 +537,19 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     letterSpacing: 0.5,
   },
-  // Paid Amount Input Styles
-  paymentInputGroup: {
+  // Paid Amount Input Styles - Separate Card
+  paymentCard: {
     backgroundColor: COLORS.ACCENT_LIGHT,
     borderRadius: 12,
     padding: 16,
-    marginBottom: 16,
+    marginTop: 16,
     borderWidth: 2,
     borderColor: COLORS.PRIMARY,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   paymentLabel: {
     fontSize: 16,
@@ -516,6 +572,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: COLORS.PRIMARY,
     paddingLeft: 12,
+    marginBottom: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -530,8 +587,8 @@ const styles = StyleSheet.create({
   },
   amountInput: {
     flex: 1,
-    padding: 16,
-    fontSize: 20,
+    padding: 14,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
   },
