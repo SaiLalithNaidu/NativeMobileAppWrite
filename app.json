@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "NativeMobile",
-    "slug": "NativeMobile",
+    "name": "Ramesh Aqua",
+    "slug": "ramesh-aqua",
     "version": "1.0.0",
     "orientation": "portrait",
-  "icon": "./assets/images/app-logo.png",
+    "icon": "./assets/images/app-logo.png",
     "scheme": "nativemobile",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -37,6 +37,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "d9b5b3b1-6286-4bfc-87d0-f744dd01c07c"
+      }
     }
   }
 }

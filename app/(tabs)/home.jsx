@@ -298,6 +298,7 @@ const styles = StyleSheet.create({
     },
     headerContent: {
       alignItems: 'center',
+      bottom:25,
     },
     welcomeContainer: {
       alignItems: 'center',
@@ -323,15 +324,18 @@ const styles = StyleSheet.create({
     },
   contentContainer: {
     flex: 1,
+    backgroundColor: '#f5f5f5',
   },
     companiesListContainer: {
       flex: 1,
       paddingHorizontal: 16,
+      backgroundColor: '#f5f5f5',
     },
     sectionHeader: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical: 16,
+      paddingTop: 20,
+      paddingBottom: 16,
       gap: 10,
     },
     sectionTitle: {
@@ -431,16 +435,6 @@ const styles = StyleSheet.create({
   },
   imageContainer:{
     marginTop: -20,
-    marginHorizontal: 20,
-    marginBottom: 16,
-    borderRadius: 12,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 6,
-    zIndex: 1,
   },
 });
 

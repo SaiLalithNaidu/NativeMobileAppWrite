@@ -55,7 +55,7 @@ export default function ImageCarousel() {
         style={{ backgroundColor: 'transparent' }}
         renderItem={({ item }) => (
           <View style={[styles.imageWrapper, { width: containerWidth }]}>
-            <Image source={{ uri: item.uri }} style={styles.image} />
+            <Image source={{ uri: item.uri }} style={styles.image} resizeMode="cover" />
           </View>
         )}
       />
@@ -78,22 +78,22 @@ const styles = StyleSheet.create({
     width: "100%",
     alignItems: "center",
     backgroundColor: 'transparent',
+    marginTop: 25,
   },
   imageWrapper: {
-    justifyContent: "center",
-    alignItems: "center",
+    paddingHorizontal: 10,
     backgroundColor: 'transparent',
   },
   image: {
     width: "100%",
     height: 150,
-    resizeMode: "cover",
     borderRadius: 10,
   },
   dotsContainer: {
     flexDirection: "row",
     justifyContent: "center",
-    marginTop: 8,
+    marginTop: 12,
+    backgroundColor: 'transparent',
   },
   dot: {
     height: 8,
