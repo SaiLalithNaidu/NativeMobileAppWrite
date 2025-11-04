@@ -2,8 +2,10 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Link, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
+import AlertCard from './components/AlertCard';
+import { formatAuthError, getPasswordStrength, isValidEmail, validatePasswordStrength } from './services/validationService';
 
 export default function SignupScreen() {
     const [name, setName] = useState('');
@@ -14,23 +16,68 @@ export default function SignupScreen() {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [passwordStrength, setPasswordStrength] = useState('weak');
+    const [showAlert, setShowAlert] = useState(false);
+    const [alertConfig, setAlertConfig] = useState({ title: '', message: '' });
     const router = useRouter();
     const { signup } = useAuth();
 
+    // Update password strength indicator as user types
+    const handlePasswordChange = (text) => {
+        setPassword(text);
+        if (text) {
+            setPasswordStrength(getPasswordStrength(text));
+        } else {
+            setPasswordStrength('weak');
+        }
+    };
+
     const handleSignup = async () => {
-        // Validation
+        // Validation - Required fields
         if (!name || !email || !password || !confirmPassword) {
             setError('Please fill in all fields');
             return;
         }
 
-        if (password !== confirmPassword) {
-            setError('Passwords do not match');
+        // Validate name
+        if (name.trim().length < 2) {
+            setError('Name must be at least 2 characters');
             return;
         }
 
-        if (password.length < 8) {
-            setError('Password must be at least 8 characters');
+        // Validate email format
+        if (!isValidEmail(email)) {
+            setError('Please enter a valid email address');
+            return;
+        }
+
+        // Validate password strength
+        const passwordValidation = validatePasswordStrength(password);
+        if (!passwordValidation.isValid) {
+            const errorList = passwordValidation.errors.join('\n• ');
+            const errorMsg = `Password must contain:\n• ${errorList}`;
+            setError(errorMsg);
+            
+            // Show AlertCard
+            setAlertConfig({
+                title: 'Weak Password',
+                message: `Your password must contain:\n\n• ${errorList}`
+            });
+            setShowAlert(true);
+            return;
+        }
+
+        // Validate password confirmation
+        if (password !== confirmPassword) {
+            const errorMsg = 'Passwords do not match';
+            setError(errorMsg);
+            
+            // Show AlertCard
+            setAlertConfig({
+                title: 'Password Mismatch',
+                message: 'The passwords you entered do not match. Please try again.'
+            });
+            setShowAlert(true);
             return;
         }
 
@@ -45,7 +92,16 @@ export default function SignupScreen() {
             // Navigate to main screen after successful signup
             router.replace('/(tabs)/home');
         } else {
-            setError(result.error || 'Signup failed');
+            // Format Firebase error to user-friendly message
+            const friendlyMessage = formatAuthError(result.error);
+            setError(friendlyMessage);
+            
+            // Show AlertCard for signup errors
+            setAlertConfig({
+                title: 'Sign Up Failed',
+                message: friendlyMessage
+            });
+            setShowAlert(true);
         }
     };
 
@@ -112,10 +168,10 @@ export default function SignupScreen() {
                         <View style={styles.inputContainer}>
                             <FontAwesome5 name="lock" size={18} color="#666" style={styles.inputIcon} />
                             <TextInput 
-                                placeholder='Password (min 8 characters)' 
+                                placeholder='Password' 
                                 placeholderTextColor="#999"
                                 value={password}
-                                onChangeText={setPassword}
+                                onChangeText={handlePasswordChange}
                                 secureTextEntry={!showPassword} 
                                 style={styles.input}
                             />
@@ -129,6 +185,41 @@ export default function SignupScreen() {
                                     color="#666" 
                                 />
                             </TouchableOpacity>
+                        </View>
+
+                        {/* Password Strength Indicator */}
+                        {password.length > 0 && (
+                            <View style={styles.passwordStrengthContainer}>
+                                <Text style={styles.passwordStrengthLabel}>Password Strength:</Text>
+                                <View style={styles.strengthBarContainer}>
+                                    <View 
+                                        style={[
+                                            styles.strengthBar,
+                                            passwordStrength === 'weak' && styles.strengthWeak,
+                                            passwordStrength === 'medium' && styles.strengthMedium,
+                                            passwordStrength === 'strong' && styles.strengthStrong,
+                                        ]}
+                                    />
+                                </View>
+                                <Text 
+                                    style={[
+                                        styles.strengthText,
+                                        passwordStrength === 'weak' && styles.strengthTextWeak,
+                                        passwordStrength === 'medium' && styles.strengthTextMedium,
+                                        passwordStrength === 'strong' && styles.strengthTextStrong,
+                                    ]}
+                                >
+                                    {passwordStrength.charAt(0).toUpperCase() + passwordStrength.slice(1)}
+                                </Text>
+                            </View>
+                        )}
+
+                        {/* Password Requirements Hint */}
+                        <View style={styles.hintContainer}>
+                            <FontAwesome5 name="info-circle" size={12} color="#666" />
+                            <Text style={styles.hintText}>
+                                Must contain: uppercase, lowercase, number, special character (!@#$%^&*...)
+                            </Text>
                         </View>
 
                         <View style={styles.inputContainer}>
@@ -192,6 +283,24 @@ export default function SignupScreen() {
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>
+
+            {/* Alert Modal */}
+            <Modal
+                visible={showAlert}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setShowAlert(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <AlertCard
+                        type="error"
+                        title={alertConfig.title}
+                        message={alertConfig.message}
+                        buttonText="OK"
+                        onPress={() => setShowAlert(false)}
+                    />
+                </View>
+            </Modal>
         </LinearGradient>
     );
 }
@@ -343,5 +452,78 @@ const styles = StyleSheet.create({
         color: '#0080ff',
         fontSize: 15,
         fontWeight: '700',
+    },
+    // Password Strength Indicator
+    passwordStrengthContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 8,
+        gap: 8,
+    },
+    passwordStrengthLabel: {
+        fontSize: 12,
+        color: '#666',
+        fontWeight: '600',
+    },
+    strengthBarContainer: {
+        flex: 1,
+        height: 4,
+        backgroundColor: '#e0e0e0',
+        borderRadius: 2,
+        overflow: 'hidden',
+    },
+    strengthBar: {
+        height: '100%',
+        borderRadius: 2,
+        transition: 'width 0.3s ease',
+    },
+    strengthWeak: {
+        width: '33%',
+        backgroundColor: '#d32f2f',
+    },
+    strengthMedium: {
+        width: '66%',
+        backgroundColor: '#ff9800',
+    },
+    strengthStrong: {
+        width: '100%',
+        backgroundColor: '#4caf50',
+    },
+    strengthText: {
+        fontSize: 11,
+        fontWeight: '700',
+        textTransform: 'uppercase',
+        minWidth: 50,
+        textAlign: 'right',
+    },
+    strengthTextWeak: {
+        color: '#d32f2f',
+    },
+    strengthTextMedium: {
+        color: '#ff9800',
+    },
+    strengthTextStrong: {
+        color: '#4caf50',
+    },
+    hintContainer: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        backgroundColor: '#f5f5f5',
+        padding: 10,
+        borderRadius: 8,
+        marginBottom: 16,
+        gap: 8,
+    },
+    hintText: {
+        flex: 1,
+        fontSize: 11,
+        color: '#666',
+        lineHeight: 16,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
 });

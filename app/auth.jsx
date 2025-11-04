@@ -2,8 +2,10 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Link, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Image, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Image, KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
+import AlertCard from './components/AlertCard';
+import { formatAuthError, isValidEmail } from './services/validationService';
 
 export default function AuthScreen()
 {
@@ -12,12 +14,26 @@ export default function AuthScreen()
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [showAlert, setShowAlert] = useState(false);
+    const [alertMessage, setAlertMessage] = useState('');
     const router = useRouter();
     const { login } = useAuth();
 
     const handleLogin = async () => {
+        // Validation
         if (!email || !password) {
             setError('Please enter both email and password');
+            return;
+        }
+
+        // Validate email format
+        if (!isValidEmail(email)) {
+            setError('Please enter a valid email address');
+            return;
+        }
+
+        if (password.length < 6) {
+            setError('Password must be at least 6 characters');
             return;
         }
 
@@ -32,7 +48,13 @@ export default function AuthScreen()
             // Navigate to main screen after successful login
             router.replace('/(tabs)/home');
         } else {
-            setError(result.error || 'Login failed');
+            // Format Firebase error to user-friendly message
+            const friendlyMessage = formatAuthError(result.error);
+            setError(friendlyMessage);
+            
+            // Show alert card for critical errors
+            setAlertMessage(friendlyMessage);
+            setShowAlert(true);
         }
     };
 
@@ -139,6 +161,24 @@ export default function AuthScreen()
                     </View>
                 </View>
             </KeyboardAvoidingView>
+
+            {/* Alert Modal */}
+            <Modal
+                visible={showAlert}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setShowAlert(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <AlertCard
+                        type="error"
+                        title="Sign In Failed"
+                        message={alertMessage}
+                        buttonText="Try Again"
+                        onPress={() => setShowAlert(false)}
+                    />
+                </View>
+            </Modal>
         </LinearGradient>
     );
 }
@@ -285,5 +325,11 @@ const styles = StyleSheet.create({
         color: '#0080ff',
         fontSize: 15,
         fontWeight: '700',
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
 });
