@@ -15,13 +15,14 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { collection, getDocs, orderBy, query } from 'firebase/firestore';
 import React, { useCallback, useState } from 'react';
 import {
-    ActivityIndicator,
-    FlatList,
-    RefreshControl,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { db } from '../../lib/firebase';
@@ -33,6 +34,7 @@ export default function OrdersScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState('all'); // all, pending, paid, partial
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Reload orders whenever screen comes into focus
   useFocusEffect(
@@ -98,15 +100,34 @@ export default function OrdersScreen() {
   };
 
   /**
-   * Filter orders based on selected filter
+   * Filter orders based on selected filter and search query
    */
   const getFilteredOrders = () => {
-    if (filter === 'all') return orders;
-    
-    return orders.filter(order => {
-      const paymentStatus = getPaymentStatus(order);
-      return paymentStatus.status === filter;
-    });
+    let filtered = orders;
+
+    // Filter by payment status
+    if (filter !== 'all') {
+      filtered = filtered.filter(order => {
+        const paymentStatus = getPaymentStatus(order);
+        return paymentStatus.status === filter;
+      });
+    }
+
+    // Filter by search query (name or phone)
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter(order => {
+        const customerName = (order.customer?.name || '').toLowerCase();
+        const customerPhone = (order.customer?.phone || '').toLowerCase();
+        const orderId = (order.orderId || '').toLowerCase();
+        
+        return customerName.includes(query) || 
+               customerPhone.includes(query) ||
+               orderId.includes(query);
+      });
+    }
+
+    return filtered;
   };
 
   /**
@@ -285,6 +306,27 @@ export default function OrdersScreen() {
         </Text>
       </View>
 
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <FontAwesome5 name="search" size={16} color="#999" style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search by name, phone, or order ID..."
+          placeholderTextColor="#999"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          autoCapitalize="none"
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity 
+            onPress={() => setSearchQuery('')}
+            style={styles.clearButton}
+          >
+            <FontAwesome5 name="times-circle" size={16} color="#999" />
+          </TouchableOpacity>
+        )}
+      </View>
+
       {/* Filters */}
       {renderFilters()}
 
@@ -342,6 +384,27 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     fontSize: 14,
     color: '#666',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  searchIcon: {
+    marginRight: 10,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    color: '#333',
+    paddingVertical: 8,
+  },
+  clearButton: {
+    padding: 4,
   },
   filtersContainer: {
     flexDirection: 'row',
