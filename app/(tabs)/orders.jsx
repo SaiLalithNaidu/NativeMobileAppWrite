@@ -299,12 +299,12 @@ export default function OrdersScreen() {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+      {/* <View style={styles.header}>
         <Text style={styles.headerTitle}>Order Management</Text>
         <Text style={styles.headerSubtitle}>
           Track payments and order status
         </Text>
-      </View>
+      </View> */}
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>

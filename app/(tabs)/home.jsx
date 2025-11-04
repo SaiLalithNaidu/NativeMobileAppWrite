@@ -259,7 +259,7 @@ const Index = () => {
             <View style={styles.welcomeContainer}>
               <Text style={styles.welcomeText}>Welcome to</Text>
               <Text style={styles.brandText}>Ramesh Aqua</Text>
-              <Text style={styles.taglineText}>🦐 Fresh & Quality Seafood</Text>
+              <Text style={styles.taglineText}>🦐 Feeds & Needs</Text>
             </View>
           </View>
         </LinearGradient>
