@@ -1,111 +1,38 @@
 import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Link, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { Link } from 'expo-router';
 import { ActivityIndicator, Image, KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { useAuth } from '../contexts/AuthContext';
 import AlertCard from './components/AlertCard';
-import { formatAuthError, isValidEmail } from './services/validationService';
+import { useAuthForm } from './hooks/useAuthForm';
 
-export default function AuthScreen()
-{
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
-    const [showAlert, setShowAlert] = useState(false);
-    const [alertMessage, setAlertMessage] = useState('');
-    const [alertType, setAlertType] = useState('error');
-    const [showForgotPassword, setShowForgotPassword] = useState(false);
-    const [resetEmail, setResetEmail] = useState('');
-    const [resetLoading, setResetLoading] = useState(false);
-    const router = useRouter();
-    const { login, resetPassword } = useAuth();
+export default function SignupScreen() {
+    const {
+        formState,
+        handleSignup,
+        handleForgotPassword,
+        handleFieldChange,
+        togglePasswordVisibility,
+        showForgotPasswordModal,
+        hideForgotPasswordModal,
+        hideAlert
+    } = useAuthForm();
 
-    const handleLogin = async () => {
-        // Validation
-        if (!email || !password) {
-            setError('Please enter both email and password');
-            return;
-        }
-
-        // Validate email format
-        if (!isValidEmail(email)) {
-            setError('Please enter a valid email address');
-            return;
-        }
-
-        if (password.length < 6) {
-            setError('Password must be at least 6 characters');
-            return;
-        }
-
-        setLoading(true);
-        setError('');
-
-        const result = await login(email, password);
-
-        setLoading(false);
-
-        if (result.success) {
-            // Navigate to main screen after successful login
-            router.replace('/(tabs)/home');
-        } else {
-            // Format Firebase error to user-friendly message
-            const friendlyMessage = formatAuthError(result.error);
-            setError(friendlyMessage);
-            
-            // Show alert card for critical errors
-            setAlertType('error');
-            setAlertMessage(friendlyMessage);
-            setShowAlert(true);
-        }
-    };
-
-    const handleForgotPassword = async () => {
-        if (!resetEmail) {
-            setAlertType('error');
-            setAlertMessage('Please enter your email address to reset your password.');
-            setShowAlert(true);
-            return;
-        }
-
-        if (!isValidEmail(resetEmail)) {
-            setAlertType('error');
-            setAlertMessage('Please enter a valid email address.');
-            setShowAlert(true);
-            return;
-        }
-
-        console.log('Attempting to send password reset email to:', resetEmail);
-        setResetLoading(true);
-        
-        try {
-            const result = await resetPassword(resetEmail);
-            console.log('Password reset result:', result);
-            setResetLoading(false);
-
-            if (result.success) {
-                setAlertType('success');
-                setAlertMessage(`✅ Password reset email sent to ${resetEmail}!\n\n📧 Please check:\n• Your inbox\n• Spam/Junk folder\n• Promotions tab (Gmail)\n\n💡 If you don't see it, try adding noreply@rameshaqua-1fc5f.firebaseapp.com to your contacts.`);
-                setShowAlert(true);
-                setShowForgotPassword(false);
-                setResetEmail('');
-            } else {
-                setAlertType('error');
-                const friendlyMessage = formatAuthError(result.error);
-                setAlertMessage(`Reset failed: ${friendlyMessage}. Please make sure the email address is registered.`);
-                setShowAlert(true);
-            }
-        } catch (error) {
-            console.error('Unexpected error in forgot password:', error);
-            setResetLoading(false);
-            setAlertType('error');
-            setAlertMessage('An unexpected error occurred. Please try again.');
-            setShowAlert(true);
-        }
-    };
+    const {
+        fullName,
+        email,
+        password,
+        confirmPassword,
+        resetEmail,
+        loading,
+        resetLoading,
+        error,
+        showPassword,
+        showConfirmPassword,
+        showAlert,
+        showForgotPassword,
+        alertMessage,
+        alertType
+    } = formState;
 
     return (
         <LinearGradient
@@ -123,12 +50,12 @@ export default function AuthScreen()
                         resizeMode="contain"
                     />
                     <Text style={styles.brandName}>Ramesh Aqua</Text>
-                    <Text style={styles.tagline}>Feeds & Needs </Text>
+                    <Text style={styles.tagline}>Fresh & Quality Seafood</Text>
                 </View>
 
                 <View style={styles.formContainer}>
-                    <Text style={styles.title}>Welcome Back!</Text>
-                    <Text style={styles.subtitle}>Sign in to your account</Text>
+                    <Text style={styles.title}>Create Account</Text>
+                    <Text style={styles.subtitle}>Sign up to get started</Text>
 
                     {error ? (
                         <View style={styles.errorContainer}>
@@ -138,12 +65,23 @@ export default function AuthScreen()
                     ) : null}
 
                     <View style={styles.inputContainer}>
+                        <FontAwesome5 name="user" size={18} color="#666" style={styles.inputIcon} />
+                        <TextInput 
+                            placeholder='Full Name' 
+                            placeholderTextColor="#999"
+                            value={fullName}
+                            onChangeText={(value) => handleFieldChange('fullName', value)}
+                            style={styles.input}
+                        />
+                    </View>
+
+                    <View style={styles.inputContainer}>
                         <FontAwesome5 name="envelope" size={18} color="#666" style={styles.inputIcon} />
                         <TextInput 
                             placeholder='Email address' 
                             placeholderTextColor="#999"
                             value={email}
-                            onChangeText={setEmail}
+                            onChangeText={(value) => handleFieldChange('email', value)}
                             autoCapitalize='none'
                             keyboardType='email-address'
                             style={styles.input}
@@ -156,12 +94,12 @@ export default function AuthScreen()
                             placeholder='Password' 
                             placeholderTextColor="#999"
                             value={password}
-                            onChangeText={setPassword}
+                            onChangeText={(value) => handleFieldChange('password', value)}
                             secureTextEntry={!showPassword} 
                             style={styles.input}
                         />
                         <TouchableOpacity 
-                            onPress={() => setShowPassword(!showPassword)}
+                            onPress={() => togglePasswordVisibility('showPassword')}
                             style={styles.eyeIcon}
                         >
                             <FontAwesome5 
@@ -172,9 +110,31 @@ export default function AuthScreen()
                         </TouchableOpacity>
                     </View>
 
+                    <View style={styles.inputContainer}>
+                        <FontAwesome5 name="lock" size={18} color="#666" style={styles.inputIcon} />
+                        <TextInput 
+                            placeholder='Confirm Password' 
+                            placeholderTextColor="#999"
+                            value={confirmPassword}
+                            onChangeText={(value) => handleFieldChange('confirmPassword', value)}
+                            secureTextEntry={!showConfirmPassword} 
+                            style={styles.input}
+                        />
+                        <TouchableOpacity 
+                            onPress={() => togglePasswordVisibility('showConfirmPassword')}
+                            style={styles.eyeIcon}
+                        >
+                            <FontAwesome5 
+                                name={showConfirmPassword ? "eye" : "eye-slash"} 
+                                size={18} 
+                                color="#666" 
+                            />
+                        </TouchableOpacity>
+                    </View>
+
                     <TouchableOpacity 
                         style={[styles.button, loading && styles.buttonDisabled]}
-                        onPress={handleLogin}
+                        onPress={() => handleSignup(fullName, email, password, confirmPassword)}
                         disabled={loading}
                     >
                         <LinearGradient
@@ -187,15 +147,15 @@ export default function AuthScreen()
                                 <ActivityIndicator color="white" />
                             ) : (
                                 <>
-                                    <Text style={styles.buttonText}>Sign In</Text>
-                                    <FontAwesome5 name="arrow-right" size={16} color="white" />
+                                    <Text style={styles.buttonText}>Create Account</Text>
+                                    <FontAwesome5 name="user-plus" size={16} color="white" />
                                 </>
                             )}
                         </LinearGradient>
                     </TouchableOpacity>
 
                     <TouchableOpacity 
-                        onPress={() => setShowForgotPassword(true)}
+                        onPress={showForgotPasswordModal}
                         style={styles.forgotPasswordContainer}
                     >
                         <Text style={styles.forgotPasswordText}>
@@ -210,10 +170,10 @@ export default function AuthScreen()
                     </View>
 
                     <View style={styles.linkContainer}>
-                        <Text style={styles.linkText}>Don&apos;t have an account? </Text>
-                        <Link href="/signup" asChild>
+                        <Text style={styles.linkText}>Already have an account? </Text>
+                        <Link href="/auth" asChild>
                             <TouchableOpacity>
-                                <Text style={styles.link}>Sign Up</Text>
+                                <Text style={styles.link}>Sign In</Text>
                             </TouchableOpacity>
                         </Link>
                     </View>
@@ -225,15 +185,15 @@ export default function AuthScreen()
                 visible={showAlert}
                 transparent={true}
                 animationType="fade"
-                onRequestClose={() => setShowAlert(false)}
+                onRequestClose={hideAlert}
             >
                 <View style={styles.modalOverlay}>
                     <AlertCard
                         type={alertType}
-                        title={alertType === 'success' ? "Email Sent" : "Sign In Failed"}
+                        title={alertType === 'success' ? "Account Created" : "Sign Up Failed"}
                         message={alertMessage}
-                        buttonText={alertType === 'success' ? "OK" : "Try Again"}
-                        onPress={() => setShowAlert(false)}
+                        buttonText={alertType === 'success' ? "Continue" : "Try Again"}
+                        onPress={hideAlert}
                     />
                 </View>
             </Modal>
@@ -243,7 +203,7 @@ export default function AuthScreen()
                 visible={showForgotPassword}
                 transparent={true}
                 animationType="slide"
-                onRequestClose={() => setShowForgotPassword(false)}
+                onRequestClose={hideForgotPasswordModal}
             >
                 <View style={styles.modalOverlay}>
                     <View style={styles.forgotPasswordModal}>
@@ -262,7 +222,7 @@ export default function AuthScreen()
                                 placeholder='Enter your email address' 
                                 placeholderTextColor="#999"
                                 value={resetEmail}
-                                onChangeText={setResetEmail}
+                                onChangeText={(value) => handleFieldChange('resetEmail', value)}
                                 autoCapitalize='none'
                                 keyboardType='email-address'
                                 style={styles.input}
@@ -272,17 +232,14 @@ export default function AuthScreen()
                         <View style={styles.modalButtonContainer}>
                             <TouchableOpacity 
                                 style={[styles.modalButton, styles.cancelButton]}
-                                onPress={() => {
-                                    setShowForgotPassword(false);
-                                    setResetEmail('');
-                                }}
+                                onPress={hideForgotPasswordModal}
                             >
                                 <Text style={styles.cancelButtonText}>Cancel</Text>
                             </TouchableOpacity>
 
                             <TouchableOpacity 
                                 style={[styles.modalButton, styles.sendButton, resetLoading && styles.buttonDisabled]}
-                                onPress={handleForgotPassword}
+                                onPress={() => handleForgotPassword(resetEmail)}
                                 disabled={resetLoading}
                             >
                                 <LinearGradient
@@ -320,13 +277,12 @@ const styles = StyleSheet.create({
     },
     logoContainer: {
         alignItems: 'center',
-        marginBottom: 30,
+        marginBottom: 40,
     },
     logo: {
         width: 120,
         height: 120,
         marginBottom: 16,
-        borderRadius: 20,
     },
     brandName: {
         fontSize: 32,

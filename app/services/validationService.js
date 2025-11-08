@@ -113,6 +113,17 @@ export const formatAuthError = (firebaseError) => {
     return 'Invalid email format. Please check your email address.';
   }
   
+  // Password reset errors
+  if (errorLower.includes('user-not-found')) {
+    return 'No account found with this email address. Please check the email or create a new account.';
+  }
+  if (errorLower.includes('invalid-email')) {
+    return 'Invalid email address. Please check your email format.';
+  }
+  if (errorLower.includes('auth/missing-email')) {
+    return 'Please enter your email address.';
+  }
+  
   // Generic fallback
   return 'Authentication failed. Please try again.';
 };

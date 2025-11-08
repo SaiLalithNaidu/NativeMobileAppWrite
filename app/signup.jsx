@@ -18,9 +18,12 @@ export default function SignupScreen() {
     const [error, setError] = useState('');
     const [passwordStrength, setPasswordStrength] = useState('weak');
     const [showAlert, setShowAlert] = useState(false);
-    const [alertConfig, setAlertConfig] = useState({ title: '', message: '' });
+    const [alertConfig, setAlertConfig] = useState({ title: '', message: '', type: 'error' });
+    const [showForgotPassword, setShowForgotPassword] = useState(false);
+    const [resetEmail, setResetEmail] = useState('');
+    const [resetLoading, setResetLoading] = useState(false);
     const router = useRouter();
-    const { signup } = useAuth();
+    const { signup, resetPassword } = useAuth();
 
     // Update password strength indicator as user types
     const handlePasswordChange = (text) => {
@@ -100,6 +103,65 @@ export default function SignupScreen() {
             setAlertConfig({
                 title: 'Sign Up Failed',
                 message: friendlyMessage
+            });
+            setShowAlert(true);
+        }
+    };
+
+    const handleForgotPassword = async () => {
+        if (!resetEmail) {
+            setAlertConfig({
+                title: 'Email Required',
+                message: 'Please enter your email address to reset your password.',
+                type: 'error'
+            });
+            setShowAlert(true);
+            return;
+        }
+
+        if (!isValidEmail(resetEmail)) {
+            setAlertConfig({
+                title: 'Invalid Email',
+                message: 'Please enter a valid email address.',
+                type: 'error'
+            });
+            setShowAlert(true);
+            return;
+        }
+
+        console.log('Attempting to send password reset email to:', resetEmail);
+        setResetLoading(true);
+        
+        try {
+            const result = await resetPassword(resetEmail);
+            console.log('Password reset result:', result);
+            setResetLoading(false);
+
+            if (result.success) {
+                setAlertConfig({
+                    title: '✅ Email Sent Successfully!',
+                    message: `Password reset email sent to ${resetEmail}!\n\n📧 Please check:\n• Your inbox\n• Spam/Junk folder\n• Promotions tab (Gmail)\n\n💡 If you don't see it, try adding noreply@rameshaqua-1fc5f.firebaseapp.com to your contacts.`,
+                    type: 'success'
+                });
+                setShowAlert(true);
+                setShowForgotPassword(false);
+                setResetEmail('');
+            } else {
+                const friendlyMessage = formatAuthError(result.error);
+                setAlertConfig({
+                    title: 'Reset Failed',
+                    message: `Reset failed: ${friendlyMessage}. Please make sure the email address is registered.`,
+                    type: 'error'
+                });
+                setShowAlert(true);
+            }
+        } catch (error) {
+            console.error('Unexpected error in forgot password:', error);
+            setResetLoading(false);
+            setAlertConfig({
+                title: 'Error',
+                message: 'An unexpected error occurred. Please try again.',
+                type: 'error'
             });
             setShowAlert(true);
         }
@@ -272,6 +334,15 @@ export default function SignupScreen() {
                             <View style={styles.dividerLine} />
                         </View>
 
+                        <TouchableOpacity 
+                            onPress={() => setShowForgotPassword(true)}
+                            style={styles.forgotPasswordContainer}
+                        >
+                            <Text style={styles.forgotPasswordText}>
+                                <FontAwesome5 name="key" size={12} color="#0080ff" /> Forgot Password?
+                            </Text>
+                        </TouchableOpacity>
+
                         <View style={styles.linkContainer}>
                             <Text style={styles.linkText}>Already have an account? </Text>
                             <Link href="/auth" asChild>
@@ -293,12 +364,80 @@ export default function SignupScreen() {
             >
                 <View style={styles.modalOverlay}>
                     <AlertCard
-                        type="error"
+                        type={alertConfig.type}
                         title={alertConfig.title}
                         message={alertConfig.message}
                         buttonText="OK"
                         onPress={() => setShowAlert(false)}
                     />
+                </View>
+            </Modal>
+
+            {/* Forgot Password Modal */}
+            <Modal
+                visible={showForgotPassword}
+                transparent={true}
+                animationType="slide"
+                onRequestClose={() => setShowForgotPassword(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.forgotPasswordModal}>
+                        <View style={styles.modalHeader}>
+                            <FontAwesome5 name="key" size={24} color="#0080ff" />
+                            <Text style={styles.modalTitle}>Reset Password</Text>
+                        </View>
+                        
+                        <Text style={styles.modalDescription}>
+                            Enter your email address and we&apos;ll send you instructions to reset your password.
+                        </Text>
+
+                        <View style={styles.inputContainer}>
+                            <FontAwesome5 name="envelope" size={18} color="#666" style={styles.inputIcon} />
+                            <TextInput 
+                                placeholder='Enter your email address' 
+                                placeholderTextColor="#999"
+                                value={resetEmail}
+                                onChangeText={setResetEmail}
+                                autoCapitalize='none'
+                                keyboardType='email-address'
+                                style={styles.input}
+                            />
+                        </View>
+
+                        <View style={styles.modalButtonContainer}>
+                            <TouchableOpacity 
+                                style={[styles.modalButton, styles.cancelButton]}
+                                onPress={() => {
+                                    setShowForgotPassword(false);
+                                    setResetEmail('');
+                                }}
+                            >
+                                <Text style={styles.cancelButtonText}>Cancel</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity 
+                                style={[styles.modalButton, styles.sendButton, resetLoading && styles.buttonDisabled]}
+                                onPress={handleForgotPassword}
+                                disabled={resetLoading}
+                            >
+                                <LinearGradient
+                                    colors={['#0080ff', '#0066cc']}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 0 }}
+                                    style={styles.buttonGradient}
+                                >
+                                    {resetLoading ? (
+                                        <ActivityIndicator color="white" size="small" />
+                                    ) : (
+                                        <>
+                                            <FontAwesome5 name="paper-plane" size={14} color="white" />
+                                            <Text style={styles.sendButtonText}>Send Reset Email</Text>
+                                        </>
+                                    )}
+                                </LinearGradient>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
                 </View>
             </Modal>
         </LinearGradient>
@@ -327,6 +466,7 @@ const styles = StyleSheet.create({
         width: 100,
         height: 100,
         marginBottom: 12,
+        borderRadius: 20,
     },
     brandName: {
         fontSize: 28,
@@ -368,30 +508,42 @@ const styles = StyleSheet.create({
     inputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        height: 56,
-        borderColor: '#e0e0e0',
-        borderWidth: 1.5,
-        borderRadius: 12,
-        marginBottom: 16,
-        paddingHorizontal: 16,
-        backgroundColor: '#fafafa',
+        height: 60,
+        borderColor: '#d1d5db',
+        borderWidth: 0.5,
+        borderRadius: 18,
+        marginBottom: 18,
+        paddingHorizontal: 20,
+        backgroundColor: '#ffffff',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        elevation: 3,
     },
     inputIcon: {
-        marginRight: 12,
+        marginRight: 14,
+        opacity: 0.8,
     },
     input: {
         flex: 1,
         fontSize: 16,
-        color: '#333',
+        color: '#1f2937',
+        fontWeight: '500',
     },
     eyeIcon: {
         padding: 8,
     },
     button: {
-        height: 56,
-        borderRadius: 12,
+        height: 60,
+        borderRadius: 18,
         overflow: 'hidden',
-        marginTop: 8,
+        marginTop: 12,
+        shadowColor: '#0080ff',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.25,
+        shadowRadius: 10,
+        elevation: 5,
     },
     buttonGradient: {
         flex: 1,
@@ -412,11 +564,13 @@ const styles = StyleSheet.create({
     errorContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#ffebee',
-        padding: 12,
-        borderRadius: 8,
-        marginBottom: 16,
-        gap: 8,
+        backgroundColor: '#fef2f2',
+        padding: 16,
+        borderRadius: 16,
+        marginBottom: 18,
+        gap: 10,
+        borderWidth: 1,
+        borderColor: '#fecaca',
     },
     errorText: {
         color: '#d32f2f',
@@ -508,11 +662,13 @@ const styles = StyleSheet.create({
     hintContainer: {
         flexDirection: 'row',
         alignItems: 'flex-start',
-        backgroundColor: '#f5f5f5',
-        padding: 10,
-        borderRadius: 8,
-        marginBottom: 16,
-        gap: 8,
+        backgroundColor: '#f8fafc',
+        padding: 14,
+        borderRadius: 16,
+        marginBottom: 18,
+        gap: 10,
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
     },
     hintText: {
         flex: 1,
@@ -525,5 +681,78 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    forgotPasswordContainer: {
+        alignSelf: 'center',
+        marginTop: 16,
+        marginBottom: 8,
+    },
+    forgotPasswordText: {
+        color: '#0080ff',
+        fontSize: 14,
+        fontWeight: '600',
+        textAlign: 'center',
+    },
+    forgotPasswordModal: {
+        backgroundColor: 'white',
+        borderRadius: 24,
+        padding: 28,
+        width: '100%',
+        maxWidth: 400,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.15,
+        shadowRadius: 20,
+        elevation: 10,
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 16,
+        gap: 12,
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#002147',
+    },
+    modalDescription: {
+        fontSize: 14,
+        color: '#666',
+        textAlign: 'center',
+        marginBottom: 24,
+        lineHeight: 20,
+    },
+    modalButtonContainer: {
+        flexDirection: 'row',
+        gap: 12,
+        marginTop: 8,
+    },
+    modalButton: {
+        flex: 1,
+        height: 52,
+        borderRadius: 16,
+        overflow: 'hidden',
+    },
+    cancelButton: {
+        backgroundColor: '#f3f4f6',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#e5e7eb',
+    },
+    cancelButtonText: {
+        color: '#666',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    sendButton: {
+        // Gradient will be applied
+    },
+    sendButtonText: {
+        color: 'white',
+        fontSize: 14,
+        fontWeight: '600',
     },
 });

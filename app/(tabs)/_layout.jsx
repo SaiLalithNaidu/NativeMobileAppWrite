@@ -93,6 +93,13 @@ export default function TabsLayout() {
           }} 
         />
         <Tabs.Screen 
+          name="warehouse" 
+          options={{ 
+            title: "Warehouse", 
+            tabBarIcon:({color})=><FontAwesome5 name="warehouse" size={18} color={color} /> 
+          }} 
+        />
+        <Tabs.Screen 
           name="orders" 
           options={{ 
             title: "Orders", 

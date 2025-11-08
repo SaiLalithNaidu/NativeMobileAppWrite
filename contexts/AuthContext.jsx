@@ -1,6 +1,7 @@
 import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut,
   updateProfile
@@ -82,8 +83,47 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const resetPassword = async (email) => {
+    try {
+      // Configure action code settings for better deliverability
+      const actionCodeSettings = {
+        // This URL will be used when the user clicks the email link
+        url: 'https://rameshaqua-1fc5f.firebaseapp.com/__/auth/action',
+        handleCodeInApp: false, // Handle in web browser, not app
+        // Optional: Add iOS and Android app links
+        iOS: {
+          bundleId: 'com.rameshaqua.nativemobile'
+        },
+        android: {
+          packageName: 'com.rameshaqua.nativemobile',
+          installApp: false,
+          minimumVersion: '12'
+        }
+      };
+
+      // Send password reset email with improved settings
+      await sendPasswordResetEmail(auth, email, actionCodeSettings);
+      
+      console.log('Password reset email sent successfully to:', email);
+      console.log('Email sent from domain:', 'noreply@rameshaqua-1fc5f.firebaseapp.com');
+      console.log('Remind user to check spam folder');
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Password reset error:', error);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
+      
+      // Log more details for debugging
+      console.error('Firebase auth instance:', auth);
+      console.error('User email for reset:', email);
+      
+      return { success: false, error: error.message };
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, login, signup, logout, loading }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, login, signup, logout, resetPassword, loading }}>
       {children}
     </AuthContext.Provider>
   );
