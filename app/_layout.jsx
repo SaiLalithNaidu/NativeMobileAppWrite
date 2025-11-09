@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider } from "../contexts/AuthContext";
 import { CartProvider } from "../contexts/CartContext";
+import { ProfileProvider } from "../contexts/ProfileContext";
 import AnimatedSplash from "./components/AnimatedSplash";
 
 export default function RootLayout() 
@@ -20,20 +21,50 @@ export default function RootLayout()
   return  (
     <AuthProvider>
       <CartProvider>
-        <SafeAreaProvider>
+        <ProfileProvider>
+          <SafeAreaProvider>
             <Stack>
               <Stack.Screen name='index' options={{headerShown:false}}/>
               <Stack.Screen name='auth' options={{headerShown:false}}/>
               <Stack.Screen name='signup' options={{headerShown:false}}/>
               <Stack.Screen name='(tabs)' options={{headerShown:false}}/>
               <Stack.Screen name='CategoriesScreen' options={{headerShown:false}}/>
+              {/* <Stack.Screen 
+                name='profile' 
+                options={{
+                  headerShown: true,
+                  headerTitle: 'Profile',
+                  presentation: 'card',
+                  animation: 'slide_from_right',
+                  headerStyle: {
+                    backgroundColor: '#fff',
+                    height: 85,
+                  },
+                  headerTitleStyle: {
+                    fontSize: 18,
+                    fontWeight: '600',
+                    color: '#1f2937',
+                  },
+                  headerTintColor: '#374151',
+                }}
+              /> */}
               <Stack.Screen 
                 name='products' 
                 options={{
                   headerShown: true,
                   headerTitle: 'Products',
                   presentation: 'card',
-                  animation: 'slide_from_right'
+                  animation: 'slide_from_right',
+                  headerStyle: {
+                    backgroundColor: '#fff',
+                    height: 85,
+                  },
+                  headerTitleStyle: {
+                    fontSize: 18,
+                    fontWeight: '600',
+                    color: '#1f2937',
+                  },
+                  headerTintColor: '#374151',
                 }}
               />
               <Stack.Screen 
@@ -42,7 +73,17 @@ export default function RootLayout()
                   headerShown: true,
                   headerTitle: 'Admin Products',
                   presentation: 'card',
-                  animation: 'slide_from_right'
+                  animation: 'slide_from_right',
+                  headerStyle: {
+                    backgroundColor: '#fff',
+                    height: 85,
+                  },
+                  headerTitleStyle: {
+                    fontSize: 18,
+                    fontWeight: '600',
+                    color: '#1f2937',
+                  },
+                  headerTintColor: '#374151',
                 }}
               />
               <Stack.Screen 
@@ -51,7 +92,17 @@ export default function RootLayout()
                   headerShown: true,
                   headerTitle: 'Edit Product',
                   presentation: 'card',
-                  animation: 'slide_from_right'
+                  animation: 'slide_from_right',
+                  headerStyle: {
+                    backgroundColor: '#fff',
+                    height: 85,
+                  },
+                  headerTitleStyle: {
+                    fontSize: 18,
+                    fontWeight: '600',
+                    color: '#1f2937',
+                  },
+                  headerTintColor: '#374151',
                 }}
               />
               <Stack.Screen 
@@ -60,7 +111,17 @@ export default function RootLayout()
                   headerShown: true,
                   headerTitle: 'Product Details',
                   presentation: 'card',
-                  animation: 'slide_from_right'
+                  animation: 'slide_from_right',
+                  headerStyle: {
+                    backgroundColor: '#fff',
+                    height: 85,
+                  },
+                  headerTitleStyle: {
+                    fontSize: 18,
+                    fontWeight: '600',
+                    color: '#1f2937',
+                  },
+                  headerTintColor: '#374151',
                 }}
               />
               <Stack.Screen 
@@ -69,7 +130,17 @@ export default function RootLayout()
                   headerShown: true,
                   headerTitle: 'Checkout',
                   presentation: 'card',
-                  animation: 'slide_from_right'
+                  animation: 'slide_from_right',
+                  headerStyle: {
+                    backgroundColor: '#fff',
+                    height: 85,
+                  },
+                  headerTitleStyle: {
+                    fontSize: 18,
+                    fontWeight: '600',
+                    color: '#1f2937',
+                  },
+                  headerTintColor: '#374151',
                 }}
               />
               <Stack.Screen 
@@ -78,12 +149,23 @@ export default function RootLayout()
                   headerShown: true,
                   headerTitle: 'Order Confirmation',
                   presentation: 'card',
-                  animation: 'slide_from_right'
+                  animation: 'slide_from_right',
+                  headerStyle: {
+                    backgroundColor: '#fff',
+                    height: 85,
+                  },
+                  headerTitleStyle: {
+                    fontSize: 18,
+                    fontWeight: '600',
+                    color: '#1f2937',
+                  },
+                  headerTintColor: '#374151',
                 }}
               />
             </Stack>
           </SafeAreaProvider>
-        </CartProvider>
-      </AuthProvider>
+        </ProfileProvider>
+      </CartProvider>
+    </AuthProvider>
   );
 }

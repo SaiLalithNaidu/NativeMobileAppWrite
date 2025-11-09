@@ -15,10 +15,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
-import { useAuth } from '../../contexts/AuthContext';
-import { useCart } from '../../contexts/CartContext';
-import { useProfile } from '../../contexts/ProfileContext';
-import { COLORS } from '../../src/utils/constants';
+import { useAuth } from '../contexts/AuthContext';
+import { useCart } from '../contexts/CartContext';
+import { useProfile } from '../contexts/ProfileContext';
+import { COLORS } from '../src/utils/constants';
 
 const ProfileScreen = () => {
   const { user, logout } = useAuth();
@@ -219,7 +219,7 @@ const ProfileScreen = () => {
               icon="receipt"
               title="Order History"
               subtitle="View your past orders"
-              onPress={() => router.push('/(tabs)/orders')}
+              onPress={() => router.push('/orders')}
             />
           </ProfileSection>
 

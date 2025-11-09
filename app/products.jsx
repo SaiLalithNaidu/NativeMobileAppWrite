@@ -3,17 +3,21 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    FlatList,
-    Image,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  FlatList,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import Toast from 'react-native-toast-message';
 import { useCart } from '../contexts/CartContext';
 import { db } from '../lib/firebase';
 import { COLORS } from '../src/utils/constants';
+import CustomHeader from './components/CustomHeader';
+import { InventoryService } from './services/inventoryService';
 
 const ProductsScreen = () => {
   const router = useRouter();
@@ -22,9 +26,85 @@ const ProductsScreen = () => {
   
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [stockStatus, setStockStatus] = useState({});
+  const [stockLoading, setStockLoading] = useState(false);
   
   // Extract simple params
   const { companyId, companyName, categoryId, categoryName } = params;
+
+  // Load stock status for products
+  const loadStockStatus = useCallback(async (productList) => {
+    try {
+      setStockLoading(true);
+      const stockData = {};
+      
+      for (const product of productList) {
+        try {
+          const inventory = await InventoryService.getProductInventory(product.id);
+          stockData[product.id] = inventory || {
+            quantity: 0,
+            isOutOfStock: true,
+            isLowStock: false,
+            lowStockThreshold: 5
+          };
+        } catch (error) {
+          console.error(`Error loading stock for product ${product.id}:`, error);
+          stockData[product.id] = {
+            quantity: 0,
+            isOutOfStock: true,
+            isLowStock: false,
+            lowStockThreshold: 5
+          };
+        }
+      }
+      
+      setStockStatus(stockData);
+    } catch (error) {
+      console.error('Error loading stock status:', error);
+    } finally {
+      setStockLoading(false);
+    }
+  }, []);
+
+  // Stock-aware add to cart
+  const addToCartWithValidation = useCallback(async (product) => {
+    const itemStock = stockStatus[product.id];
+    
+    if (!itemStock || itemStock.isOutOfStock) {
+      Toast.show({
+        type: 'error',
+        text1: 'Out of Stock',
+        text2: `${product.title} is currently out of stock`,
+      });
+      return;
+    }
+
+    const currentQuantityInCart = getItemQuantity(product.id);
+    
+    if (currentQuantityInCart >= itemStock.quantity) {
+      Toast.show({
+        type: 'error',
+        text1: 'Insufficient Stock',
+        text2: `Only ${itemStock.quantity} items available`,
+      });
+      return;
+    }
+
+    addToCart(product);
+    
+    if (itemStock.isLowStock && currentQuantityInCart + 1 === itemStock.quantity) {
+      Toast.show({
+        type: 'info',
+        text1: 'Last Item',
+        text2: `This is the last ${product.title} in stock!`,
+      });
+    }
+  }, [stockStatus, getItemQuantity, addToCart]);
+
+  // Stock-aware remove from cart
+  const removeFromCartWithValidation = useCallback((productId) => {
+    removeFromCart(productId);
+  }, [removeFromCart]);
 
   const fetchProducts = useCallback(async () => {
     try {
@@ -40,12 +120,17 @@ const ProductsScreen = () => {
       const productsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       console.log('✅ Products loaded:', productsData.length);
       setProducts(productsData);
+      
+      // Load stock status for the products
+      if (productsData.length > 0) {
+        await loadStockStatus(productsData);
+      }
     } catch (error) {
       console.error('❌ Error fetching products:', error);
     } finally {
       setLoading(false);
     }
-  }, [companyId, categoryId]);
+  }, [companyId, categoryId, loadStockStatus]);
 
   useEffect(() => {
     console.log('🚀 Products Screen Mounted - Params:', { companyId, companyName, categoryId, categoryName });
@@ -68,6 +153,10 @@ const ProductsScreen = () => {
 
   const renderProductItem = ({ item }) => {
     const quantity = getItemQuantity(item.id);
+    const itemStockStatus = stockStatus[item.id];
+    const isOutOfStock = itemStockStatus?.isOutOfStock || false;
+    const isLowStock = itemStockStatus?.isLowStock || false;
+    const availableQuantity = itemStockStatus?.quantity || 0;
 
     return (
       <View style={styles.gridItem}>
@@ -78,55 +167,85 @@ const ProductsScreen = () => {
           {item.imageUrl ? (
             <Image 
               source={{ uri: item.imageUrl }}
-              style={styles.gridImage}
+              style={[styles.gridImage, isOutOfStock && styles.outOfStockImage]}
               resizeMode="cover"
             />
           ) : (
-            <View style={[styles.gridImage, styles.placeholderImage]}>
+            <View style={[styles.gridImage, styles.placeholderImage, isOutOfStock && styles.outOfStockImage]}>
               <FontAwesome5 name="box" size={40} color="#ccc" />
             </View>
           )}
+          
+          {/* Stock Status Badge */}
+          {isOutOfStock && (
+            <View style={styles.stockBadge}>
+              <Text style={styles.stockBadgeText}>OUT OF STOCK</Text>
+            </View>
+          )}
+          {isLowStock && !isOutOfStock && (
+            <View style={[styles.stockBadge, styles.lowStockBadge]}>
+              <Text style={[styles.stockBadgeText, styles.lowStockText]}>LOW STOCK</Text>
+            </View>
+          )}
         </TouchableOpacity>
+        
         <View style={styles.gridInfo}>
           <TouchableOpacity onPress={() => handleProductPress(item)}>
-            <Text style={styles.gridTitle} numberOfLines={2}>
+            <Text style={[styles.gridTitle, isOutOfStock && styles.outOfStockText]} numberOfLines={2}>
               {item.title || "Unnamed Product"}
             </Text>
           </TouchableOpacity>
           {item.description && (
-            <Text style={styles.gridDescription} numberOfLines={2}>
+            <Text style={[styles.gridDescription, isOutOfStock && styles.outOfStockText]} numberOfLines={2}>
               {item.description}
             </Text>
           )}
           <View style={styles.gridPriceContainer}>
             {item.originalPrice && (
-              <Text style={styles.gridOriginalPrice}>₹{item.originalPrice}</Text>
+              <Text style={[styles.gridOriginalPrice, isOutOfStock && styles.outOfStockText]}>₹{item.originalPrice}</Text>
             )}
-            <Text style={styles.gridPrice}>₹{item.price || 0}</Text>
+            <Text style={[styles.gridPrice, isOutOfStock && styles.outOfStockText]}>₹{item.price || 0}</Text>
           </View>
 
-          {/* Add to Cart Controls - Swiggy/Zomato Style */}
-          {quantity === 0 ? (
+          {/* Stock Information */}
+          {!isOutOfStock && availableQuantity > 0 && (
+            <Text style={styles.stockInfo}>
+              {availableQuantity} available
+            </Text>
+          )}
+
+          {/* Add to Cart Controls - Stock Aware */}
+          {isOutOfStock ? (
+            <View style={[styles.addButton, styles.outOfStockButton]}>
+              <Text style={styles.outOfStockButtonText}>OUT OF STOCK</Text>
+            </View>
+          ) : quantity === 0 ? (
             <TouchableOpacity 
               style={styles.addButton}
-              onPress={() => addToCart(item)}
+              onPress={() => addToCartWithValidation(item)}
+              disabled={stockLoading}
             >
-              <Text style={styles.addButtonText}>ADD</Text>
+              {stockLoading ? (
+                <ActivityIndicator size="small" color="white" />
+              ) : (
+                <Text style={styles.addButtonText}>ADD TO CART</Text>
+              )}
             </TouchableOpacity>
           ) : (
             <View style={styles.quantityControl}>
               <TouchableOpacity 
                 style={styles.quantityButton}
-                onPress={() => removeFromCart(item.id)}
+                onPress={() => removeFromCartWithValidation(item.id)}
               >
                 <FontAwesome5 name="minus" size={12} color="#fff" />
               </TouchableOpacity>
               <Text style={styles.quantityText}>{quantity}</Text>
               <TouchableOpacity 
                 style={styles.quantityButton}
-                onPress={() => addToCart(item)}
+                onPress={() => addToCartWithValidation(item)}
+                disabled={quantity >= availableQuantity}
               >
-                <FontAwesome5 name="plus" size={12} color="#fff" />
+                <FontAwesome5 name="plus" size={12} color={quantity >= availableQuantity ? "#ccc" : "#fff"} />
               </TouchableOpacity>
             </View>
           )}
@@ -137,32 +256,24 @@ const ProductsScreen = () => {
 
   if (loading) {
     return (
-      <>
-        <Stack.Screen 
-          options={{
-            headerShown: true,
-            headerTitle: categoryName && categoryName !== 'undefined' ? categoryName : 'Products',
-            headerTitleStyle: { fontSize: 18, fontWeight: 'bold' },
-            headerBackTitle: 'Back',
-          }} 
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <CustomHeader 
+          title={categoryName && categoryName !== 'undefined' ? categoryName : 'Products'}
         />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={COLORS.PRIMARY} />
           <Text style={styles.loadingText}>Loading products...</Text>
         </View>
-      </>
+      </SafeAreaView>
     );
   }
 
   return (
-    <>
-      <Stack.Screen 
-        options={{
-          headerShown: true,
-          headerTitle: categoryName && categoryName !== 'undefined' ? categoryName : 'Products',
-          headerTitleStyle: { fontSize: 18, fontWeight: 'bold' },
-          headerBackTitle: 'Back',
-        }} 
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+      <Stack.Screen options={{ headerShown: false }} />
+      <CustomHeader 
+        title={categoryName && categoryName !== 'undefined' ? categoryName : 'Products'}
       />
       <View style={styles.container}>
         {/* Header */}
@@ -212,7 +323,7 @@ const ProductsScreen = () => {
           </TouchableOpacity>
         )}
       </View>
-    </>
+    </SafeAreaView>
   );
 };
 
@@ -416,6 +527,50 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '700',
+  },
+
+  // Stock Status Styles
+  outOfStockImage: {
+    opacity: 0.5,
+  },
+  stockBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: '#dc2625',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    zIndex: 1,
+  },
+  lowStockBadge: {
+    backgroundColor: '#f59e0b',
+  },
+  stockBadgeText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  lowStockText: {
+    color: 'white',
+  },
+  outOfStockText: {
+    color: '#9ca3af',
+  },
+  stockInfo: {
+    fontSize: 11,
+    color: '#059669',
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  outOfStockButton: {
+    backgroundColor: '#9ca3af',
+  },
+  outOfStockButtonText: {
+    color: 'white',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
 });
 

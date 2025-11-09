@@ -1,19 +1,18 @@
-import { AntDesign, FontAwesome5 } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { Tabs, useRouter } from "expo-router";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
+import { useProfile } from '../../contexts/ProfileContext';
 import { COLORS } from '../../src/utils/constants';
 
 export default function TabsLayout() {
 
-  const { user, logout } = useAuth();
   const { getTotalItems } = useCart();
+  const { profileImage } = useProfile();
   const router = useRouter();
 
-  const handleLogout = async () => {
-    await logout();
-    router.replace('/auth');
+  const handleProfilePress = () => {
+    router.push('/profile');
   };
 
   return (
@@ -21,8 +20,23 @@ export default function TabsLayout() {
       screenOptions={{
         tabBarActiveTintColor: COLORS.PRIMARY,
         tabBarInactiveTintColor: '#999',
-        tabBarStyle: { backgroundColor: '#fff' },
-        headerTitleStyle: { color: COLORS.PRIMARY_DARK },
+        tabBarStyle: { 
+          backgroundColor: '#fff',
+          height: 70,
+          paddingBottom: 10,
+          paddingTop: 10,
+        },
+        headerStyle: {
+          backgroundColor: '#fff',
+          height: 85,
+          borderBottomWidth: 1,
+          borderBottomColor: '#f3f4f6',
+        },
+        headerTitleStyle: { 
+          fontSize: 18,
+          fontWeight: '600',
+          color: '#1f2937',
+        },
       }} 
       initialRouteName="home"
     >
@@ -42,10 +56,59 @@ export default function TabsLayout() {
               </View>
             ),
             headerRight: () => (
-              <View style={{ display: "flex", flexDirection: "row", alignItems: "center" }}>
-                <Text style={{ flexDirection: "row", alignItems: "center", fontSize: 12, paddingRight: 8, color: '#666' }}>Hi, {user ? user.email : 'Guest'}</Text>
-                <TouchableOpacity onPress={handleLogout}>
-                  <AntDesign name="logout" size={22} color="black" style={{ marginRight: 15 }} />
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 16 }}>
+                {/* Cart Icon */}
+                <View style={{ position: 'relative', marginRight: 16 }}>
+                  {/* <FontAwesome5 name="shopping-cart" size={24} color="#666" /> */}
+                  {getTotalItems() > 0 && (
+                    <View style={{
+                      position: 'absolute',
+                      top: -8,
+                      right: -8,
+                      backgroundColor: '#007AFF',
+                      borderRadius: 10,
+                      minWidth: 20,
+                      height: 20,
+                      justifyContent: 'center',
+                      alignItems: 'center'
+                    }}>
+                      <Text style={{ color: 'white', fontSize: 11, fontWeight: 'bold' }}>
+                        {getTotalItems()}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                
+                {/* PhonePe-style Profile Section */}
+                <TouchableOpacity 
+                  onPress={handleProfilePress}
+                  style={{
+                    backgroundColor: '#f3f4f6',
+                    padding: 3,
+                    borderRadius: 10,
+                    borderWidth: 0.5,
+                    borderColor: '#e5e7eb',
+                  }}
+                >
+                  {/* Profile Image */}
+                  <View style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: 8,
+                    backgroundColor: '#007AFF',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    overflow: 'hidden'
+                  }}>
+                    {profileImage ? (
+                      <Image 
+                        source={{ uri: profileImage }} 
+                        style={{ width: 34, height: 34, borderRadius: 8 }}
+                      />
+                    ) : (
+                      <FontAwesome5 name="user" size={16} color="white" />
+                    )}
+                  </View>
                 </TouchableOpacity>
               </View>
             ),
@@ -76,13 +139,6 @@ export default function TabsLayout() {
                 </View>
               );
             }
-          }} 
-        />
-        <Tabs.Screen 
-          name="profile" 
-          options={{ 
-            title: "Profile", 
-            tabBarIcon:({color})=><FontAwesome5 name="user" size={18} color={color} /> 
           }} 
         />
         <Tabs.Screen 
@@ -133,7 +189,7 @@ const styles = StyleSheet.create({
   logoContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginLeft: 15,
+    marginLeft: 16,
     gap: 8,
   },
   logoImage: {
@@ -142,8 +198,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   logoText: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 16,
+    fontWeight: '700',
     color: COLORS.PRIMARY_DARK,
   },
 });

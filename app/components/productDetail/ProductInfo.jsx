@@ -10,11 +10,39 @@
  */
 
 import { FontAwesome5 } from '@expo/vector-icons';
-import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { COLORS } from '../../../src/utils/constants';
+import { InventoryService } from '../../services/inventoryService';
 
 export const ProductInfo = ({ product, onAddToCart, onRemoveFromCart, quantity }) => {
+  const [stockInfo, setStockInfo] = useState(null);
+  const [loadingStock, setLoadingStock] = useState(true);
+
+  useEffect(() => {
+    const loadStockInfo = async () => {
+      if (!product?.id) return;
+      
+      try {
+        setLoadingStock(true);
+        const inventory = await InventoryService.getProductInventory(product.id);
+        setStockInfo(inventory);
+      } catch (error) {
+        console.error('Error fetching product stock:', error);
+        setStockInfo({
+          quantity: 0,
+          isOutOfStock: true,
+          isLowStock: false,
+          lowStockThreshold: 5
+        });
+      } finally {
+        setLoadingStock(false);
+      }
+    };
+
+    loadStockInfo();
+  }, [product?.id]);
+
   if (!product) return null;
 
   const discount = product.originalPrice 
@@ -68,12 +96,64 @@ export const ProductInfo = ({ product, onAddToCart, onRemoveFromCart, quantity }
         </View>
       </View>
 
+      {/* Stock Information */}
+      <View style={styles.stockSection}>
+        {loadingStock ? (
+          <View style={styles.loadingStock}>
+            <ActivityIndicator size="small" color={COLORS.PRIMARY} />
+            <Text style={styles.loadingStockText}>Checking stock...</Text>
+          </View>
+        ) : stockInfo ? (
+          <>
+            <View style={styles.stockInfo}>
+              <FontAwesome5 
+                name={stockInfo.isOutOfStock ? "times-circle" : "check-circle"} 
+                size={16} 
+                color={stockInfo.isOutOfStock ? "#dc2625" : "#059669"} 
+              />
+              <Text style={[
+                styles.stockText, 
+                stockInfo.isOutOfStock && styles.outOfStockText,
+                stockInfo.isLowStock && !stockInfo.isOutOfStock && styles.lowStockText
+              ]}>
+                {stockInfo.isOutOfStock 
+                  ? "Out of Stock" 
+                  : stockInfo.isLowStock 
+                    ? `Low Stock (${stockInfo.quantity} left)`
+                    : `In Stock (${stockInfo.quantity} available)`
+                }
+              </Text>
+            </View>
+            
+            {stockInfo.isLowStock && !stockInfo.isOutOfStock && (
+              <Text style={styles.lowStockWarning}>
+                ⚠️ Only {stockInfo.quantity} items left!
+              </Text>
+            )}
+          </>
+        ) : (
+          <View style={styles.stockInfo}>
+            <FontAwesome5 name="question-circle" size={16} color="#9ca3af" />
+            <Text style={styles.stockText}>Stock information unavailable</Text>
+          </View>
+        )}
+      </View>
+
       {/* Add to Cart Section */}
       <View style={styles.cartSection}>
-        {quantity === 0 ? (
+        {stockInfo?.isOutOfStock ? (
+          <View style={[styles.addToCartButton, styles.outOfStockButton]}>
+            <FontAwesome5 name="times-circle" size={18} color="white" />
+            <Text style={styles.outOfStockButtonText}>OUT OF STOCK</Text>
+          </View>
+        ) : quantity === 0 ? (
           <TouchableOpacity 
-            style={styles.addToCartButton}
+            style={[
+              styles.addToCartButton,
+              loadingStock && styles.disabledButton
+            ]}
             onPress={onAddToCart}
+            disabled={loadingStock || stockInfo?.isOutOfStock}
           >
             <FontAwesome5 name="shopping-cart" size={18} color="white" />
             <Text style={styles.addToCartText}>ADD TO CART</Text>
@@ -88,10 +168,18 @@ export const ProductInfo = ({ product, onAddToCart, onRemoveFromCart, quantity }
             </TouchableOpacity>
             <Text style={styles.quantityText}>{quantity}</Text>
             <TouchableOpacity 
-              style={styles.quantityButton}
+              style={[
+                styles.quantityButton,
+                quantity >= (stockInfo?.quantity || 0) && styles.disabledQuantityButton
+              ]}
               onPress={onAddToCart}
+              disabled={quantity >= (stockInfo?.quantity || 0)}
             >
-              <FontAwesome5 name="plus" size={16} color="white" />
+              <FontAwesome5 
+                name="plus" 
+                size={16} 
+                color={quantity >= (stockInfo?.quantity || 0) ? "#ccc" : "white"} 
+              />
             </TouchableOpacity>
           </View>
         )}
@@ -243,6 +331,68 @@ const styles = StyleSheet.create({
     color: 'white',
     minWidth: 40,
     textAlign: 'center',
+  },
+
+  // Stock Status Styles
+  stockSection: {
+    marginBottom: 20,
+  },
+  loadingStock: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    backgroundColor: '#f9fafb',
+    borderRadius: 8,
+    gap: 10,
+  },
+  loadingStockText: {
+    fontSize: 14,
+    color: '#6b7280',
+  },
+  stockInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#f9fafb',
+    borderRadius: 8,
+    gap: 10,
+  },
+  stockText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#059669',
+  },
+  outOfStockText: {
+    color: '#dc2625',
+  },
+  lowStockText: {
+    color: '#f59e0b',
+  },
+  lowStockWarning: {
+    fontSize: 14,
+    color: '#f59e0b',
+    fontWeight: '500',
+    backgroundColor: '#fef3c7',
+    padding: 12,
+    borderRadius: 8,
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  outOfStockButton: {
+    backgroundColor: '#9ca3af',
+  },
+  outOfStockButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  disabledButton: {
+    opacity: 0.6,
+  },
+  disabledQuantityButton: {
+    opacity: 0.5,
   },
 });
 
