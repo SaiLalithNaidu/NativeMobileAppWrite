@@ -7,6 +7,7 @@
  * - Provides real-time client-side search filtering
  * - Returns mapped company and category names for display
  * - Handles loading and error states
+ * - Manages search history with AsyncStorage
  * 
  * Usage:
  * const { 
@@ -16,14 +17,20 @@
  *   error,
  *   companyMap,
  *   categoryMap,
- *   handleSearch 
+ *   searchHistory,
+ *   handleSearch,
+ *   handleSearchFromHistory,
+ *   clearSearchHistory
  * } = useSearch();
  */
 
 import { useEffect, useMemo, useState } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 import { searchService } from '../../app/services/searchService';
+import { searchHistoryService } from '../../app/services/searchHistoryService';
 
 export const useSearch = () => {
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -31,8 +38,9 @@ export const useSearch = () => {
   const [companies, setCompanies] = useState([]);
   const [categories, setCategories] = useState([]);
   const [results, setResults] = useState([]);
+  const [searchHistory, setSearchHistory] = useState([]);
 
-  // Load all data on mount
+  // Load all data on mount and search history
   useEffect(() => {
     const loadInitialData = async () => {
       try {
@@ -44,6 +52,12 @@ export const useSearch = () => {
         setAllProducts(products);
         setCompanies(companies);
         setCategories(categories);
+        
+        // Load search history
+        if (user) {
+          const history = await searchHistoryService.getSearchHistory(user.uid);
+          setSearchHistory(history);
+        }
         
         if (products.length === 0) {
           setError("No products found");
@@ -57,7 +71,7 @@ export const useSearch = () => {
     };
 
     loadInitialData();
-  }, []);
+  }, [user]);
 
   // Create lookup maps for companies and categories
   const companyMap = useMemo(() => {
@@ -73,7 +87,7 @@ export const useSearch = () => {
   }, [categories]);
 
   // Search handler
-  const handleSearch = (text) => {
+  const handleSearch = async (text) => {
     setSearchQuery(text);
     
     const query = text.trim().toLowerCase();
@@ -84,6 +98,29 @@ export const useSearch = () => {
 
     const matched = searchService.filterProducts(allProducts, query);
     setResults(matched);
+
+    // Save to search history if user is logged in and query has results
+    if (user && matched.length > 0) {
+      await searchHistoryService.addSearchQuery(user.uid, text.trim());
+      // Refresh search history
+      const updatedHistory = await searchHistoryService.getSearchHistory(user.uid);
+      setSearchHistory(updatedHistory);
+    }
+  };
+
+  // Handle search from history
+  const handleSearchFromHistory = (historyQuery) => {
+    setSearchQuery(historyQuery);
+    const matched = searchService.filterProducts(allProducts, historyQuery);
+    setResults(matched);
+  };
+
+  // Clear search history
+  const clearSearchHistory = async () => {
+    if (user) {
+      await searchHistoryService.clearSearchHistory(user.uid);
+      setSearchHistory([]);
+    }
   };
 
   return {
@@ -93,6 +130,9 @@ export const useSearch = () => {
     error,
     companyMap,
     categoryMap,
-    handleSearch
+    searchHistory,
+    handleSearch,
+    handleSearchFromHistory,
+    clearSearchHistory
   };
 };
