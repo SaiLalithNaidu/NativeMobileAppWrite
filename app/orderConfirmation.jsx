@@ -33,27 +33,29 @@ export default function OrderConfirmationScreen() {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
   const [orderSaved, setOrderSaved] = useState(false);
+  const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
-    // Parse order data from params
-    if (params.orderData) {
+    // Parse order data from params - only run once when component mounts
+    if (params.orderData && !orderData && !initialized) {
       try {
         const parsedOrder = JSON.parse(params.orderData);
         setOrderData(parsedOrder);
+        setInitialized(true);
         console.log('Order loaded:', parsedOrder.orderId);
         
         // Check if order is already saved (orderId param indicates it's already saved)
-        if (params.orderId) {
+        if (params.orderId && !orderSaved) {
           console.log('Order already saved with Firebase ID:', params.orderId);
           setOrderSaved(true);
           // Clear cart since order is already saved
-          clearCart();
+          setTimeout(() => clearCart(), 100);
           Toast.show({
             type: 'success',
             text1: 'Order Placed!',
             text2: 'Your order has been saved successfully',
           });
-        } else {
+        } else if (!params.orderId && !orderSaved) {
           // Auto-save order to database only if not already saved
           saveOrder(parsedOrder);
         }
@@ -66,13 +68,13 @@ export default function OrderConfirmationScreen() {
         });
       }
     }
-  }, [params.orderData, params.orderId, saveOrder, clearCart]);
+  }, [params.orderData, params.orderId, orderData, orderSaved, saveOrder, clearCart, initialized]);
 
   /**
    * Save order to Firebase database
    */
   const saveOrder = useCallback(async (order) => {
-    if (orderSaved) return;
+    if (orderSaved || isSavingOrder) return;
 
     try {
       setIsSavingOrder(true);
@@ -90,7 +92,7 @@ export default function OrderConfirmationScreen() {
       });
 
       // Clear cart after successful order save
-      clearCart();
+      setTimeout(() => clearCart(), 100);
       
     } catch (error) {
       console.error('Error saving order:', error);
@@ -102,7 +104,7 @@ export default function OrderConfirmationScreen() {
     } finally {
       setIsSavingOrder(false);
     }
-  }, [orderSaved, clearCart]);
+  }, [orderSaved, isSavingOrder, clearCart]);
 
   /**
    * Generate PDF invoice

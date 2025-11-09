@@ -25,13 +25,15 @@ export default function ImageCarousel() {
   // 🔁 Auto-scroll effect
   useEffect(() => {
     const interval = setInterval(() => {
-      const nextIndex = (activeIndex + 1) % images.length;
-      setActiveIndex(nextIndex);
-      flatListRef.current?.scrollToIndex({ index: nextIndex, animated: true });
+      setActiveIndex(prevIndex => {
+        const nextIndex = (prevIndex + 1) % images.length;
+        flatListRef.current?.scrollToIndex({ index: nextIndex, animated: true });
+        return nextIndex;
+      });
     }, 1500); // <-- every 1.5 second
 
     return () => clearInterval(interval); // cleanup
-  }, [activeIndex]);
+  }, []); // Remove activeIndex dependency to prevent infinite loop
 
   return (
     <View

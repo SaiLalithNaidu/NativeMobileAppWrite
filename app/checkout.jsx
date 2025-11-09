@@ -237,8 +237,8 @@ export default function CheckoutScreen() {
       const docId = await saveOrderToDatabase(orderData);
       console.log('Order saved to Firebase with ID:', docId);
 
-      // Navigate to confirmation screen
-      router.push({
+      // Navigate to confirmation screen (replace to avoid back navigation loops)
+      router.replace({
         pathname: '/orderConfirmation',
         params: {
           orderData: JSON.stringify(orderData),
