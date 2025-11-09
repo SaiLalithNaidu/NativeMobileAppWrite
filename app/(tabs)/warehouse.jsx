@@ -362,6 +362,59 @@ const WarehouseOverview = () => {
         </View>
       </LinearGradient>
 
+      {/* Quick Actions - PhonePe Style Design */}
+      <View style={styles.quickActionsSection}>
+        <View style={styles.quickActionsHeader}>
+          <Text style={styles.quickActionsTitle}>Warehouse & Operations</Text>
+        </View>
+        
+        <View style={styles.quickActionGrid}>
+          <TouchableOpacity 
+            style={styles.quickActionItem}
+            onPress={() => router.push('/addStock')}
+          >
+            <View style={styles.quickActionCircle}>
+              <FontAwesome5 name="plus" size={24} color="#8B5CF6" />
+            </View>
+            <Text style={styles.quickActionLabel}>Add Stock</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.quickActionItem}
+            onPress={() => {
+              Alert.alert('Coming Soon', 'Inventory Reports feature will be available soon!');
+            }}
+          >
+            <View style={styles.quickActionCircle}>
+              <FontAwesome5 name="chart-bar" size={24} color="#8B5CF6" />
+            </View>
+            <Text style={styles.quickActionLabel}>Inventory Report</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.quickActionItem}
+            onPress={() => {
+              Alert.alert('Stock Alerts', 'No critical stock alerts at the moment!');
+            }}
+          >
+            <View style={styles.quickActionCircle}>
+              <FontAwesome5 name="exclamation-triangle" size={24} color="#8B5CF6" />
+            </View>
+            <Text style={styles.quickActionLabel}>Stock Alerts</Text>
+          </TouchableOpacity>
+          
+          {/* <TouchableOpacity 
+            style={styles.quickActionItem}
+            onPress={generateSampleSalesData}
+          >
+            <View style={styles.quickActionCircle}>
+              <FontAwesome5 name="database" size={24} color="#8B5CF6" />
+            </View>
+            <Text style={styles.quickActionLabel}>Sample Data</Text>
+          </TouchableOpacity> */}
+        </View>
+      </View>
+
       {/* Company Selector */}
       {companies.length > 1 && (
         <View style={styles.companySelector}>
@@ -638,37 +691,7 @@ const WarehouseOverview = () => {
         </View>
       )}
 
-      {/* Quick Actions */}
-      <View style={styles.actionsSection}>
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
-        <View style={styles.actionButtons}>
-          <TouchableOpacity 
-            style={styles.actionButton}
-            onPress={() => router.push('/addStock')}
-          >
-            <FontAwesome5 name="plus-circle" size={20} color="#0080ff" />
-            <Text style={styles.actionButtonText}>Add Stock</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.actionButton}>
-            <FontAwesome5 name="chart-bar" size={20} color="#0080ff" />
-            <Text style={styles.actionButtonText}>View Reports</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.actionButton}>
-            <FontAwesome5 name="bell" size={20} color="#0080ff" />
-            <Text style={styles.actionButtonText}>Stock Alerts</Text>
-          </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={[styles.actionButton, styles.seedDataButton]}
-            onPress={generateSampleSalesData}
-          >
-            <FontAwesome5 name="seedling" size={20} color="#10b981" />
-            <Text style={[styles.actionButtonText, styles.seedDataText]}>Generate Sample Data</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
     </ScrollView>
   );
 };
@@ -1039,47 +1062,71 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#6b7280',
   },
-  actionsSection: {
-    backgroundColor: 'white',
+  // PhonePe Style Quick Actions
+  quickActionsSection: {
+    backgroundColor: '#F5F5F7',
     marginHorizontal: 20,
-    marginBottom: 20,
+    marginVertical: 16,
     padding: 20,
-    borderRadius: 16,
+    borderRadius: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.06,
     shadowRadius: 8,
+    elevation: 3,
+  },
+  quickActionsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  quickActionsTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#1D1D1F',
+  },
+  viewAllButton: {
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+  },
+  viewAllText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#8B5CF6',
+  },
+  quickActionGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 5,
+  },
+  quickActionItem: {
+    alignItems: 'center',
+    flex: 1,
+    paddingVertical: 8,
+    marginHorizontal: 5,
+  },
+  quickActionCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'white',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+    shadowColor: '#8B5CF6',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
     elevation: 2,
   },
-  actionButtons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  actionButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: '#f8fafc',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    gap: 8,
-  },
-  actionButtonText: {
-    fontSize: 14,
+  quickActionLabel: {
+    fontSize: 13,
     fontWeight: '500',
-    color: '#374151',
-  },
-  seedDataButton: {
-    backgroundColor: '#f0fdf4',
-    borderColor: '#86efac',
-  },
-  seedDataText: {
-    color: '#10b981',
-    fontWeight: '600',
+    color: '#1D1D1F',
+    textAlign: 'center',
+    lineHeight: 16,
+    maxWidth: 80,
   },
   metricsLoadingContainer: {
     flexDirection: 'row',

@@ -1,11 +1,11 @@
-﻿import { AntDesign } from '@expo/vector-icons';
+﻿import { AntDesign, FontAwesome5 } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { addDoc, collection, deleteDoc, doc, getDocs, query, updateDoc, where } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { db } from '../../lib/firebase';
-import { COLORS } from '../../src/utils/constants';
 import AlertCard from '../components/AlertCard';
 
 export default function AdminPanel() {
@@ -44,6 +44,12 @@ export default function AdminPanel() {
   });
   const [editingProductId, setEditingProductId] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
+
+  // Modal states for bottom sheets
+  const [showCompanyModal, setShowCompanyModal] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [showCompanyList, setShowCompanyList] = useState(false);
+  const [showCategoryList, setShowCategoryList] = useState(false);
 
   // Centralized custom alert state (for AlertCard)
   const [alertVisible, setAlertVisible] = useState(false);
@@ -622,70 +628,21 @@ export default function AdminPanel() {
 
   // Note: Product deletions are handled within the Admin Products screen
 
-  const renderCompanyItem = ({ item }) => {
-    // Use custom companyId if it exists, otherwise use Firebase document id
-    let companyIdentifier = item.companyId || item.id;
-    
-    return (
-      <View style={styles.listItemContainer}>
-        <TouchableOpacity
-          style={[
-            styles.listItem,
-            selectedCompanyId === companyIdentifier && styles.selectedItem
-          ]}
-          onPress={() => {
-            console.log('Using identifier:', companyIdentifier);
-            setSelectedCompanyId(companyIdentifier);
-            setSelectedCompanyName(item.name);
-          }}
-        >
-          <Text style={styles.listItemText}>{item.name}</Text>
-          {selectedCompanyId === companyIdentifier && (
-            <Text style={styles.checkmark}>✓</Text>
-          )}
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.deleteButton}
-          onPress={() => handleDeleteCompany(item.id, item.name)}
-        >
-          <AntDesign name="delete" size={20} color={COLORS.ERROR} />
-        </TouchableOpacity>
-      </View>
-    );
-  };
-
-  const renderCategoryItem = ({ item }) => (
-    <View style={styles.listItemContainer}>
-      <TouchableOpacity
-        style={[
-          styles.listItem,
-          selectedCategoryId === item.id && styles.selectedItem
-        ]}
-        onPress={() => {
-          setSelectedCategoryId(item.id);
-          setSelectedCategoryName(item.title);
-        }}
-      >
-        <Text style={styles.listItemText}>{item.title}</Text>
-        {selectedCategoryId === item.id && (
-          <Text style={styles.checkmark}>✓</Text>
-        )}
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.deleteButton}
-        onPress={() => handleDeleteCategory(item.id, item.title)}
-      >
-        <AntDesign name="delete" size={20} color={COLORS.ERROR} />
-      </TouchableOpacity>
-    </View>
-  );
-
   return (
-    <KeyboardAvoidingView 
-      style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-    >
+    <View style={styles.container}>
+      {/* Header */}
+      <LinearGradient
+        colors={['#667eea', '#764ba2']}
+        style={styles.header}
+      >
+        <View style={styles.headerContent}>
+          <View style={styles.headerInfo}>
+            <Text style={styles.headerTitle}>Admin Panel</Text>
+            <Text style={styles.headerSubtitle}>Manage companies, categories & products</Text>
+          </View>
+        </View>
+      </LinearGradient>
+
       {/* View Products Button - Top Right */}
       {selectedCompanyId && selectedCategoryId && (
         <TouchableOpacity 
@@ -698,253 +655,550 @@ export default function AdminPanel() {
       )}
 
       <ScrollView 
-        style={styles.container}
-        contentContainerStyle={styles.scrollContent}
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.sectionTitle}>🏢 Add Company</Text>
-      <TextInput
-        placeholder="Company Name *"
-        value={company.name}
-        onChangeText={(t) => setCompany({ ...company, name: t })}
-        style={styles.input}
-      />
-      <TextInput
-        placeholder="Description"
-        value={company.description}
-        onChangeText={(t) => setCompany({ ...company, description: t })}
-        style={styles.input}
-        multiline
-      />
-      <TextInput
-        placeholder="Logo URL"
-        value={company.logoUrl}
-        onChangeText={(t) => setCompany({ ...company, logoUrl: t })}
-        style={styles.input}
-      />
-      <TextInput
-        placeholder="Website URL"
-        value={company.websiteUrl}
-        onChangeText={(t) => setCompany({ ...company, websiteUrl: t })}
-        style={styles.input}
-      />
-      <TouchableOpacity style={styles.button} onPress={handleAddCompany}>
-        <Text style={styles.buttonText}>{btnloading ? <ActivityIndicator color="white" />
-                    : "Add Company"}</Text>
-      </TouchableOpacity>
+        {/* Step 1: Add Company */}
+        <View style={styles.stepContainer}>
+          <View style={styles.stepHeader}>
+            <FontAwesome5 name="building" size={16} color="#667eea" />
+            <Text style={styles.stepTitle}>Step 1: Add Company</Text>
+          </View>
+          
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Company Name *</Text>
+            <TextInput
+              style={styles.textInput}
+              value={company.name}
+              onChangeText={(t) => setCompany({ ...company, name: t })}
+              placeholder="Enter company name"
+            />
+          </View>
 
-      <View style={styles.separator}>
-        <Text style={styles.sectionTitle}>📋 Existing Companies</Text>
-        {loadingCompanies ? (
-          <ActivityIndicator size="small" color={COLORS.PRIMARY} />
-        ) : companies.length === 0 ? (
-          <Text style={styles.emptyText}>No companies yet. Add one above!</Text>
-        ) : (
-          <View style={styles.listContainer}>
-            <ScrollView 
-              style={styles.scrollableList}
-              nestedScrollEnabled={true}
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Description</Text>
+            <TextInput
+              style={[styles.textInput, styles.multilineInput]}
+              value={company.description}
+              onChangeText={(t) => setCompany({ ...company, description: t })}
+              placeholder="Company description"
+              multiline
+              numberOfLines={3}
+            />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Logo URL</Text>
+            <TextInput
+              style={styles.textInput}
+              value={company.logoUrl}
+              onChangeText={(t) => setCompany({ ...company, logoUrl: t })}
+              placeholder="Company logo URL"
+            />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Website URL</Text>
+            <TextInput
+              style={styles.textInput}
+              value={company.websiteUrl}
+              onChangeText={(t) => setCompany({ ...company, websiteUrl: t })}
+              placeholder="Company website URL"
+            />
+          </View>
+
+          <View style={styles.actionButtons}>
+            <TouchableOpacity 
+              style={styles.addButton} 
+              onPress={handleAddCompany}
+              disabled={btnloading}
             >
-              {companies.map((item) => (
-                <View key={item.id}>
-                  {renderCompanyItem({ item })}
-                </View>
+              {btnloading ? (
+                <ActivityIndicator size="small" color="#ffffff" />
+              ) : (
+                <>
+                  <FontAwesome5 name="plus" size={16} color="#ffffff" />
+                  <Text style={styles.addButtonText}>Add Company</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          {/* Companies List Button */}
+          <TouchableOpacity
+            style={styles.listButton}
+            onPress={() => setShowCompanyList(true)}
+          >
+            <FontAwesome5 name="list" size={16} color="#667eea" />
+            <Text style={styles.listButtonText}>
+              View Companies ({companies.length})
+            </Text>
+            <FontAwesome5 name="chevron-right" size={14} color="#667eea" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Step 2: Add Category */}
+        <View style={styles.stepContainer}>
+          <View style={styles.stepHeader}>
+            <FontAwesome5 name="list" size={16} color="#667eea" />
+            <Text style={styles.stepTitle}>Step 2: Add Category</Text>
+          </View>
+
+          {selectedCompanyId ? (
+            <View style={styles.selectedBadge}>
+              <Text style={styles.selectedBadgeText}>
+                Selected Company: {selectedCompanyName}
+              </Text>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={styles.selectionButton}
+              onPress={() => setShowCompanyModal(true)}
+            >
+              <Text style={styles.selectionText}>Select Company First</Text>
+              <FontAwesome5 name="chevron-down" size={16} color="#6b7280" />
+            </TouchableOpacity>
+          )}
+
+          {selectedCompanyId && (
+            <>
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Category Title *</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={category.title}
+                  onChangeText={(t) => setCategory({ ...category, title: t })}
+                  placeholder="Enter category title"
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Description</Text>
+                <TextInput
+                  style={[styles.textInput, styles.multilineInput]}
+                  value={category.description}
+                  onChangeText={(t) => setCategory({ ...category, description: t })}
+                  placeholder="Category description"
+                  multiline
+                  numberOfLines={3}
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Image URL</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={category.imageUrl}
+                  onChangeText={(t) => setCategory({ ...category, imageUrl: t })}
+                  placeholder="Category image URL"
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Category URL</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={category.url}
+                  onChangeText={(t) => setCategory({ ...category, url: t })}
+                  placeholder="Category URL"
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Products Count</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={category.productsCount}
+                  onChangeText={(t) => setCategory({ ...category, productsCount: t })}
+                  placeholder="Expected products count"
+                  keyboardType="numeric"
+                />
+              </View>
+
+              <View style={styles.actionButtons}>
+                <TouchableOpacity 
+                  style={[styles.addButton, btnloading && styles.disabledButton]} 
+                  onPress={handleAddCategory}
+                  disabled={btnloading}
+                >
+                  {btnloading ? (
+                    <ActivityIndicator size="small" color="#ffffff" />
+                  ) : (
+                    <>
+                      <FontAwesome5 name="plus" size={16} color="#ffffff" />
+                      <Text style={styles.addButtonText}>Add Category</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+
+              {/* Categories List Button */}
+              <TouchableOpacity
+                style={styles.listButton}
+                onPress={() => setShowCategoryList(true)}
+              >
+                <FontAwesome5 name="list" size={16} color="#667eea" />
+                <Text style={styles.listButtonText}>
+                  View Categories ({categories.length})
+                </Text>
+                <FontAwesome5 name="chevron-right" size={14} color="#667eea" />
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
+
+        {/* Step 3: Add Product */}
+        <View style={styles.stepContainer}>
+          <View style={styles.stepHeader}>
+            <FontAwesome5 name="box" size={16} color="#667eea" />
+            <Text style={styles.stepTitle}>
+              {isEditMode ? 'Edit Product' : 'Step 3: Add Product'}
+            </Text>
+          </View>
+
+          {isEditMode && (
+            <View style={[styles.selectedBadge, { backgroundColor: '#FFF3CD' }]}>
+              <Text style={[styles.selectedBadgeText, { color: '#856404' }]}>
+                📝 Editing Mode - Update product details below
+              </Text>
+            </View>
+          )}
+
+          {!selectedCompanyId ? (
+            <TouchableOpacity
+              style={styles.selectionButton}
+              onPress={() => setShowCompanyModal(true)}
+            >
+              <Text style={styles.selectionText}>Select Company First</Text>
+              <FontAwesome5 name="chevron-down" size={16} color="#6b7280" />
+            </TouchableOpacity>
+          ) : !selectedCategoryId ? (
+            <View>
+              <View style={styles.selectedBadge}>
+                <Text style={styles.selectedBadgeText}>
+                  Company: {selectedCompanyName}
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={styles.selectionButton}
+                onPress={() => setShowCategoryModal(true)}
+              >
+                <Text style={styles.selectionText}>Select Category</Text>
+                <FontAwesome5 name="chevron-down" size={16} color="#6b7280" />
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <>
+              <View style={styles.selectedBadge}>
+                <Text style={styles.selectedBadgeText}>
+                  {selectedCompanyName} → {selectedCategoryName}
+                </Text>
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Product Title *</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={product.title}
+                  onChangeText={(t) => setProduct({ ...product, title: t })}
+                  placeholder="Enter product title"
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Description</Text>
+                <TextInput
+                  style={[styles.textInput, styles.multilineInput]}
+                  value={product.description}
+                  onChangeText={(t) => setProduct({ ...product, description: t })}
+                  placeholder="Product description"
+                  multiline
+                  numberOfLines={3}
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Image URL</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={product.imageUrl}
+                  onChangeText={(t) => setProduct({ ...product, imageUrl: t })}
+                  placeholder="Product image URL"
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Product URL</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={product.url}
+                  onChangeText={(t) => setProduct({ ...product, url: t })}
+                  placeholder="Product URL"
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Price *</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={product.price}
+                  onChangeText={(t) => setProduct({ ...product, price: t })}
+                  placeholder="Product price"
+                  keyboardType="numeric"
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Original Price</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={product.originalPrice}
+                  onChangeText={(t) => setProduct({ ...product, originalPrice: t })}
+                  placeholder="Original price (optional)"
+                  keyboardType="numeric"
+                />
+              </View>
+
+              <View style={styles.actionButtons}>
+                {isEditMode ? (
+                  <>
+                    <TouchableOpacity 
+                      style={[styles.addButton, styles.updateButton]} 
+                      onPress={handleUpdateProduct}
+                      disabled={btnloading}
+                    >
+                      {btnloading ? (
+                        <ActivityIndicator size="small" color="#ffffff" />
+                      ) : (
+                        <>
+                          <FontAwesome5 name="save" size={16} color="#ffffff" />
+                          <Text style={styles.addButtonText}>Update Product</Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={[styles.resetButton, { flex: 1 }]} 
+                      onPress={handleCancelEdit}
+                    >
+                      <FontAwesome5 name="times" size={16} color="#ef4444" />
+                      <Text style={styles.resetButtonText}>Cancel</Text>
+                    </TouchableOpacity>
+                  </>
+                ) : (
+                  <TouchableOpacity 
+                    style={[styles.addButton, btnloading && styles.disabledButton]} 
+                    onPress={handleAddProduct}
+                    disabled={btnloading}
+                  >
+                    {btnloading ? (
+                      <ActivityIndicator size="small" color="#ffffff" />
+                    ) : (
+                      <>
+                        <FontAwesome5 name="plus" size={16} color="#ffffff" />
+                        <Text style={styles.addButtonText}>Add Product</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                )}
+              </View>
+            </>
+          )}
+        </View>
+      </ScrollView>
+
+      <Toast />
+
+      {/* Company Selection Modal */}
+      <Modal
+        visible={showCompanyModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowCompanyModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Company</Text>
+              <TouchableOpacity onPress={() => setShowCompanyModal(false)}>
+                <FontAwesome5 name="times" size={20} color="#6b7280" />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.modalList}>
+              {companies.map((company) => (
+                <TouchableOpacity
+                  key={company.id}
+                  style={styles.modalItem}
+                  onPress={() => {
+                    const companyIdentifier = company.companyId || company.id;
+                    setSelectedCompanyId(companyIdentifier);
+                    setSelectedCompanyName(company.name);
+                    setShowCompanyModal(false);
+                  }}
+                >
+                  <FontAwesome5 name="building" size={16} color="#667eea" />
+                  <Text style={styles.modalItemText}>{company.name}</Text>
+                </TouchableOpacity>
               ))}
             </ScrollView>
           </View>
-        )}
-      </View>
+        </View>
+      </Modal>
 
-      <View style={styles.separator}>
-        <Text style={styles.sectionTitle}>📂 Add Category</Text>
-        {selectedCompanyId ? (
-          <View style={styles.selectedBadge}>
-            <Text style={styles.selectedBadgeText}>
-              Selected Company: {selectedCompanyName}
-            </Text>
-          </View>
-        ) : (
-          <Text style={styles.warningText}>⚠️ Please select a company first</Text>
-        )}
-        
-        <TextInput
-          placeholder="Category Title *"
-          value={category.title}
-          onChangeText={(t) => setCategory({ ...category, title: t })}
-          style={styles.input}
-          editable={!!selectedCompanyId}
-        />
-        <TextInput
-          placeholder="Description"
-          value={category.description}
-          onChangeText={(t) => setCategory({ ...category, description: t })}
-          style={styles.input}
-          multiline
-          editable={!!selectedCompanyId}
-        />
-        <TextInput
-          placeholder="Image URL"
-          value={category.imageUrl}
-          onChangeText={(t) => setCategory({ ...category, imageUrl: t })}
-          style={styles.input}
-          editable={!!selectedCompanyId}
-        />
-        <TextInput
-          placeholder="Category URL"
-          value={category.url}
-          onChangeText={(t) => setCategory({ ...category, url: t })}
-          style={styles.input}
-          editable={!!selectedCompanyId}
-        />
-        <TextInput
-          placeholder="Products count"
-          value={category.productsCount}
-          onChangeText={(t) => setCategory({ ...category, productsCount: t })}
-          style={styles.input}
-          editable={!!selectedCompanyId}
-        />
-        <TouchableOpacity 
-          style={[styles.button, (!selectedCompanyId || btnloading) && styles.buttonDisabled]} 
-          onPress={handleAddCategory}
-          disabled={!selectedCompanyId || btnloading}
-        >
-          <Text style={styles.buttonText}>{btnloading ? <ActivityIndicator color="white" />
-                    : "Add Category"}</Text>
-        </TouchableOpacity>
-
-        {selectedCompanyId && (
-          <View style={styles.subSection}>
-            <Text style={styles.subSectionTitle}>
-              Categories under {selectedCompanyName}
-            </Text>
-            {categories.length === 0 ? (
-              <Text style={styles.emptyText}>No categories yet. Add one above!</Text>
-            ) : (
-              <View style={styles.listContainer}>
-                <ScrollView 
-                  style={styles.scrollableList}
-                  nestedScrollEnabled={true}
+      {/* Category Selection Modal */}
+      <Modal
+        visible={showCategoryModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowCategoryModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Category</Text>
+              <TouchableOpacity onPress={() => setShowCategoryModal(false)}>
+                <FontAwesome5 name="times" size={20} color="#6b7280" />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.modalList}>
+              {categories.map((category) => (
+                <TouchableOpacity
+                  key={category.id}
+                  style={styles.modalItem}
+                  onPress={() => {
+                    setSelectedCategoryId(category.id);
+                    setSelectedCategoryName(category.title);
+                    setShowCategoryModal(false);
+                  }}
                 >
-                  {categories.map((item) => (
-                    <View key={item.id}>
-                      {renderCategoryItem({ item })}
-                    </View>
-                  ))}
-                </ScrollView>
-              </View>
-            )}
+                  <FontAwesome5 name="list" size={16} color="#667eea" />
+                  <Text style={styles.modalItemText}>{category.title}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           </View>
-        )}
-      </View>
+        </View>
+      </Modal>
 
-      <View style={styles.separator}>
-        <Text style={styles.sectionTitle}>
-          {isEditMode ? '✏️ Edit Product' : '🧾 Add Product'}
-        </Text>
-        {isEditMode && (
-          <View style={[styles.selectedBadge, { backgroundColor: '#FFF3CD' }]}>
-            <Text style={[styles.selectedBadgeText, { color: '#856404' }]}>
-              📝 Editing Mode - Update product details below
-            </Text>
+      {/* Company List Modal */}
+      <Modal
+        visible={showCompanyList}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowCompanyList(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Existing Companies</Text>
+              <TouchableOpacity onPress={() => setShowCompanyList(false)}>
+                <FontAwesome5 name="times" size={20} color="#6b7280" />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.modalList}>
+              {loadingCompanies ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="small" color="#667eea" />
+                  <Text style={styles.loadingText}>Loading companies...</Text>
+                </View>
+              ) : companies.length === 0 ? (
+                <Text style={styles.emptyText}>No companies yet. Add one above!</Text>
+              ) : (
+                companies.map((company) => (
+                  <View key={company.id} style={styles.listItemContainer}>
+                    <TouchableOpacity
+                      style={[
+                        styles.modalItem,
+                        (selectedCompanyId === (company.companyId || company.id)) && styles.selectedModalItem
+                      ]}
+                      onPress={() => {
+                        const companyIdentifier = company.companyId || company.id;
+                        setSelectedCompanyId(companyIdentifier);
+                        setSelectedCompanyName(company.name);
+                      }}
+                    >
+                      <FontAwesome5 name="building" size={16} color="#667eea" />
+                      <Text style={styles.modalItemText}>{company.name}</Text>
+                      {(selectedCompanyId === (company.companyId || company.id)) && (
+                        <FontAwesome5 name="check" size={16} color="#667eea" />
+                      )}
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.deleteButtonModal}
+                      onPress={() => {
+                        setShowCompanyList(false);
+                        handleDeleteCompany(company.id, company.name);
+                      }}
+                    >
+                      <FontAwesome5 name="trash" size={16} color="#ef4444" />
+                    </TouchableOpacity>
+                  </View>
+                ))
+              )}
+            </ScrollView>
           </View>
-        )}
-        {selectedCompanyId ? (
-          <View style={styles.selectedBadge}>
-            <Text style={styles.selectedBadgeText}>
-              Company: {selectedCompanyName}
-            </Text>
-          </View>
-        ) : (
-          <Text style={styles.warningText}>⚠️ Please select a company first</Text>
-        )}
-        
-        {selectedCategoryId ? (
-          <View style={styles.selectedBadge}>
-            <Text style={styles.selectedBadgeText}>
-              Category: {selectedCategoryName}
-            </Text>
-          </View>
-        ) : selectedCompanyId ? (
-          <Text style={styles.warningText}>⚠️ Please select a category first</Text>
-        ) : null}
+        </View>
+      </Modal>
 
-        <TextInput
-          placeholder="Product Title *"
-          value={product.title}
-          onChangeText={(t) => setProduct({ ...product, title: t })}
-          style={styles.input}
-          editable={!!selectedCategoryId}
-        />
-        <TextInput
-          placeholder="Description"
-          value={product.description}
-          onChangeText={(t) => setProduct({ ...product, description: t })}
-          style={styles.input}
-          multiline
-          editable={!!selectedCategoryId}
-        />
-        <TextInput
-          placeholder="Image URL"
-          value={product.imageUrl}
-          onChangeText={(t) => setProduct({ ...product, imageUrl: t })}
-          style={styles.input}
-          editable={!!selectedCategoryId}
-        />
-        <TextInput
-          placeholder="Product URL"
-          value={product.url}
-          onChangeText={(t) => setProduct({ ...product, url: t })}
-          style={styles.input}
-          editable={!!selectedCategoryId}
-        />
-        <TextInput
-          placeholder="Price *"
-          keyboardType="numeric"
-          value={product.price}
-          onChangeText={(t) => setProduct({ ...product, price: t })}
-          style={styles.input}
-          editable={!!selectedCategoryId}
-        />
-        <TextInput
-          placeholder="Original Price"
-          keyboardType="numeric"
-          value={product.originalPrice}
-          onChangeText={(t) => setProduct({ ...product, originalPrice: t })}
-          style={styles.input}
-          editable={!!selectedCategoryId}
-        />
-        {isEditMode ? (
-          <View style={styles.buttonRow}>
-            <TouchableOpacity 
-              style={[styles.button, styles.updateButton, { flex: 1 }]} 
-              onPress={handleUpdateProduct}
-            >
-              <Text style={styles.buttonText}>
-                {btnloading ? <ActivityIndicator color="white" /> : "Update Product"}
+      {/* Category List Modal */}
+      <Modal
+        visible={showCategoryList}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowCategoryList(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                Categories - {selectedCompanyName}
               </Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.button, styles.cancelButton, { flex: 1 }]} 
-              onPress={handleCancelEdit}
-            >
-              <Text style={styles.buttonText}>Cancel</Text>
-            </TouchableOpacity>
+              <TouchableOpacity onPress={() => setShowCategoryList(false)}>
+                <FontAwesome5 name="times" size={20} color="#6b7280" />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.modalList}>
+              {categories.length === 0 ? (
+                <Text style={styles.emptyText}>No categories yet. Add one above!</Text>
+              ) : (
+                categories.map((category) => (
+                  <View key={category.id} style={styles.listItemContainer}>
+                    <TouchableOpacity
+                      style={[
+                        styles.modalItem,
+                        (selectedCategoryId === category.id) && styles.selectedModalItem
+                      ]}
+                      onPress={() => {
+                        setSelectedCategoryId(category.id);
+                        setSelectedCategoryName(category.title);
+                      }}
+                    >
+                      <FontAwesome5 name="list" size={16} color="#667eea" />
+                      <Text style={styles.modalItemText}>{category.title}</Text>
+                      {(selectedCategoryId === category.id) && (
+                        <FontAwesome5 name="check" size={16} color="#667eea" />
+                      )}
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.deleteButtonModal}
+                      onPress={() => {
+                        setShowCategoryList(false);
+                        handleDeleteCategory(category.id, category.title);
+                      }}
+                    >
+                      <FontAwesome5 name="trash" size={16} color="#ef4444" />
+                    </TouchableOpacity>
+                  </View>
+                ))
+              )}
+            </ScrollView>
           </View>
-        ) : (
-          <TouchableOpacity 
-            style={[styles.button, !selectedCategoryId && styles.buttonDisabled]} 
-            onPress={handleAddProduct}
-            disabled={!selectedCategoryId}
-          >
-            <Text style={styles.buttonText}>
-              {btnloading ? <ActivityIndicator color="white" /> : "Add Product"}
-            </Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-        <Toast />
-      </ScrollView>
+        </View>
+      </Modal>
 
       {/* Custom Alert overlay above everything */}
       {alertVisible && (
@@ -958,98 +1212,93 @@ export default function AdminPanel() {
           />
         </View>
       )}
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.BACKGROUND,
+    backgroundColor: '#f8fafc',
   },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 100,
-  },
-  sectionTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 15,
-    color: COLORS.SECONDARY,
-  },
-  subSectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 10,
-    color: '#555',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: COLORS.LIGHT_GRAY,
-    borderRadius: 8,
-    marginBottom: 10,
-    padding: 12,
-    backgroundColor: COLORS.WHITE,
-    fontSize: 16,
-  },
-  separator: {
-    marginTop: 30,
+  header: {
     paddingTop: 20,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.LIGHT_GRAY,
+    paddingBottom: 20,
+    paddingHorizontal: 20,
   },
-  subSection: {
-    marginTop: 20,
-    padding: 15,
-    backgroundColor: COLORS.WHITE,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  listItemContainer: {
+  headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
   },
-  listItem: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 15,
-    backgroundColor: COLORS.WHITE,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  selectedItem: {
-    backgroundColor: COLORS.ACCENT_LIGHT,
-    borderColor: COLORS.PRIMARY,
-    borderWidth: 2,
-  },
-  listItemText: {
-    fontSize: 16,
-    color: COLORS.SECONDARY,
+  headerInfo: {
     flex: 1,
   },
-  checkmark: {
-    fontSize: 20,
-    color: COLORS.PRIMARY,
+  headerTitle: {
+    fontSize: 24,
     fontWeight: 'bold',
+    color: '#ffffff',
+    marginBottom: 4,
   },
-  deleteButton: {
-    marginLeft: 8,
-    padding: 10,
-    backgroundColor: COLORS.WHITE,
-    borderRadius: 8,
+  headerSubtitle: {
+    fontSize: 16,
+    color: '#e5e7eb',
+    opacity: 0.9,
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  stepContainer: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  stepHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  stepTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1f2937',
+    marginLeft: 12,
+  },
+  selectionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#f9fafb',
     borderWidth: 1,
-    borderColor: COLORS.ERROR,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
+  },
+  selectedButton: {
+    backgroundColor: '#eff6ff',
+    borderColor: '#667eea',
+  },
+  selectionText: {
+    fontSize: 16,
+    color: '#6b7280',
+  },
+  selectedText: {
+    color: '#667eea',
+    fontWeight: '500',
   },
   selectedBadge: {
     backgroundColor: '#d4edda',
-    padding: 10,
+    padding: 12,
     borderRadius: 8,
-    marginBottom: 10,
+    marginBottom: 16,
     borderWidth: 1,
     borderColor: '#c3e6cb',
   },
@@ -1058,229 +1307,197 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 14,
   },
-  warningText: {
-    color: COLORS.WARNING,
-    backgroundColor: '#fff3cd',
-    padding: 10,
+  inputContainer: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#1f2937',
+    marginBottom: 8,
+  },
+  textInput: {
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
     borderRadius: 8,
-    marginBottom: 10,
+    padding: 12,
+    fontSize: 16,
+    color: '#1f2937',
+  },
+  multilineInput: {
+    height: 80,
+    textAlignVertical: 'top',
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+  },
+  addButton: {
+    flex: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#667eea',
+    borderRadius: 8,
+    padding: 16,
+    gap: 8,
+  },
+  addButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  resetButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#ef4444',
+    borderRadius: 8,
+    padding: 16,
+    gap: 8,
+  },
+  resetButtonText: {
+    color: '#ef4444',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  listButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#f0f9ff',
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+    borderRadius: 8,
+    padding: 14,
+    marginTop: 12,
+  },
+  listButtonText: {
+    fontSize: 15,
+    color: '#667eea',
+    fontWeight: '500',
+    marginLeft: 8,
+    flex: 1,
+  },
+  disabledButton: {
+    backgroundColor: '#9ca3af',
+  },
+  updateButton: {
+    backgroundColor: '#059669',
+  },
+  // Modal Styles (Bottom Sheet)
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '70%',
+    paddingBottom: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1f2937',
+  },
+  modalList: {
+    paddingHorizontal: 20,
+  },
+  modalItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+    gap: 12,
+    flex: 1,
+  },
+  modalItemText: {
+    fontSize: 16,
+    color: '#1f2937',
+    flex: 1,
+  },
+  selectedModalItem: {
+    backgroundColor: '#eff6ff',
+  },
+  listItemContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 0,
+  },
+  deleteButtonModal: {
+    padding: 12,
+    marginLeft: 8,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    marginLeft: 8,
     fontSize: 14,
+    color: '#6b7280',
   },
   emptyText: {
-    color: '#999',
+    color: '#9ca3af',
     fontStyle: 'italic',
     textAlign: 'center',
     padding: 20,
+    fontSize: 16,
   },
-  listContainer: {
-    maxHeight: 250,
-    marginTop: 10,
+  // View Products Button - Top Right
+  viewProductsButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    backgroundColor: '#667eea',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderRadius: 20,
+    zIndex: 100,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
-  scrollableList: {
-    flexGrow: 0,
+  viewProductsButtonText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 14,
+    marginLeft: 6,
   },
-  button: {
-    backgroundColor: COLORS.PRIMARY,
-        height: 50,
-        borderRadius: 8,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginTop: 8,
-        color: 'white',
-    },
-    buttonText: {
-        color: 'white',
-        fontSize: 18,
-    },
-    // Full-screen overlay for AlertCard
-    alertOverlay: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0,0,0,0.45)',
-      justifyContent: 'center',
-      alignItems: 'center',
-      zIndex: 999,
-      elevation: 999,
-    },
-    buttonDisabled: {
-      backgroundColor: '#cccccc',
-      opacity: 0.6,
-    },
-    buttonRow: {
-      flexDirection: 'row',
-      marginTop: 8,
-      gap: 10,
-      marginBottom: 20,
-    },
-    updateButton: {
-      backgroundColor: COLORS.SUCCESS,
-    },
-    cancelButton: {
-      backgroundColor: '#6c757d',
-    },
-    // View Products Button - Top Right
-    viewProductsButton: {
-      position: 'absolute',
-      top: 10,
-      right: 10,
-      backgroundColor: COLORS.PRIMARY,
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: 15,
-      paddingVertical: 10,
-      borderRadius: 20,
-      zIndex: 100,
-      elevation: 5,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.25,
-      shadowRadius: 3.84,
-    },
-    viewProductsButtonText: {
-      color: 'white',
-      fontWeight: '600',
-      fontSize: 14,
-      marginLeft: 6,
-    },
-    // Products View Styles (Grid Layout - Similar to Categories)
-    productsViewContainer: {
-      flex: 1,
-      backgroundColor: '#f5f5f5',
-    },
-    productsViewHeader: {
-      backgroundColor: 'white',
-      paddingHorizontal: 20,
-      paddingVertical: 15,
-      paddingTop: 20,
-      borderBottomWidth: 1,
-      borderBottomColor: '#e0e0e0',
-    },
-    backButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginBottom: 12,
-      padding: 8,
-    },
-    backButtonText: {
-      marginLeft: 8,
-      fontSize: 16,
-      color: '#333',
-      fontWeight: '500',
-    },
-    productsViewTitle: {
-      fontSize: 22,
-      fontWeight: 'bold',
-      color: '#333',
-      marginTop: 8,
-    },
-    productsViewSubtitle: {
-      fontSize: 14,
-      color: '#666',
-      marginTop: 4,
-    },
-    loadingContainer: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      paddingTop: 50,
-    },
-    loadingText: {
-      marginTop: 10,
-      color: '#666',
-      fontSize: 16,
-    },
-    emptyProductsContainer: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      paddingTop: 100,
-    },
-    emptyProductsText: {
-      fontSize: 18,
-      color: '#999',
-      marginTop: 15,
-      fontWeight: '600',
-    },
-    emptyProductsSubtext: {
-      fontSize: 14,
-      color: '#bbb',
-      marginTop: 5,
-      textAlign: 'center',
-      paddingHorizontal: 40,
-    },
-    productsGridContainer: {
-      paddingHorizontal: 5,
-      paddingVertical: 15,
-      paddingBottom: 20,
-    },
-    productsGridRow: {
-      justifyContent: 'space-between',
-      marginBottom: 15,
-      paddingHorizontal: 5,
-    },
-    productCard: {
-      backgroundColor: 'white',
-      borderRadius: 12,
-      width: '48%',
-      overflow: 'hidden',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 3,
-    },
-    productImageContainer: {
-      width: '100%',
-      height: 140,
-      backgroundColor: '#f0f0f0',
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    placeholderProduct: {
-      backgroundColor: '#f5f5f5',
-    },
-    productImageIcon: {
-      fontSize: 30,
-      marginBottom: 5,
-    },
-    productImageUrl: {
-      fontSize: 10,
-      color: '#888',
-      textAlign: 'center',
-      paddingHorizontal: 5,
-    },
-    productCardInfo: {
-      padding: 12,
-    },
-    productCardTitle: {
-      fontSize: 14,
-      fontWeight: '600',
-      color: '#333',
-      marginBottom: 4,
-      minHeight: 36,
-    },
-    productCardDescription: {
-      fontSize: 12,
-      color: '#666',
-      marginBottom: 8,
-      lineHeight: 16,
-    },
-    productPriceRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 6,
-    },
-    productCardPrice: {
-      fontSize: 16,
-      fontWeight: 'bold',
-      color: '#4CAF50',
-    },
-    originalPriceSmall: {
-      fontSize: 12,
-      color: '#999',
-      textDecorationLine: 'line-through',
-    },
+  // Full-screen overlay for AlertCard
+  alertOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 999,
+    elevation: 999,
+  },
 });
