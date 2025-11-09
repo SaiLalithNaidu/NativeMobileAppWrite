@@ -10,6 +10,7 @@
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import { collection, getDocs } from 'firebase/firestore';
 import React, { useCallback, useState } from 'react';
 import {
@@ -24,11 +25,16 @@ import {
 } from 'react-native';
 import { db } from '../../lib/firebase';
 import { SimpleSalesAnalyticsService } from '../services/simpleSalesAnalyticsService';
+import { SalesDataSeeder } from '../utils/salesDataSeeder';
 
 const WarehouseOverview = () => {
+  const router = useRouter();
+  
   // State management
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [warehouseLoading, setWarehouseLoading] = useState(false);
+  const [salesLoading, setSalesLoading] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState('today'); // today, week, month, year
   
   // Data state
@@ -50,6 +56,9 @@ const WarehouseOverview = () => {
 
   const [companies, setCompanies] = useState([]);
   const [selectedCompany, setSelectedCompany] = useState(null);
+  
+  // Cache for sales data to reduce API calls
+  const [salesCache, setSalesCache] = useState({});
 
   // Load data when screen focuses
   useFocusEffect(
@@ -70,7 +79,7 @@ const WarehouseOverview = () => {
       };
       
       initializeData();
-    }, [])
+    }, [loadCompanies, loadWarehouseData])
   );
 
   // Reload sales data when period changes
@@ -78,7 +87,16 @@ const WarehouseOverview = () => {
     const loadAnalytics = async () => {
       if (!selectedCompany) return;
 
+      // Check cache first to reduce API calls
+      const cacheKey = `${selectedCompany.id}-${selectedPeriod}`;
+      if (salesCache[cacheKey]) {
+        console.log('Using cached sales data for', cacheKey);
+        setSalesStats(salesCache[cacheKey]);
+        return;
+      }
+
       try {
+        setSalesLoading(true);
         let salesData;
         
         switch (selectedPeriod) {
@@ -98,21 +116,46 @@ const WarehouseOverview = () => {
             salesData = await SimpleSalesAnalyticsService.getTodaysSales(selectedCompany.id);
         }
 
-        setSalesStats({
+        const processedStats = {
           itemsSold: salesData.totalItems || 0,
           totalOrders: salesData.totalOrders || 0,
           totalRevenue: salesData.totalRevenue || 0,
           topSellingProducts: salesData.topProducts || []
-        });
+        };
+
+        // Cache the result for faster subsequent loads
+        setSalesCache(prev => ({
+          ...prev,
+          [cacheKey]: processedStats
+        }));
+
+        setSalesStats(processedStats);
       } catch (error) {
         console.error('Error loading sales data:', error);
+        // Set default values on error to prevent UI disruption
+        const defaultStats = {
+          itemsSold: 0,
+          totalOrders: 0,
+          totalRevenue: 0,
+          topSellingProducts: []
+        };
+        setSalesStats(defaultStats);
+      } finally {
+        setSalesLoading(false);
       }
     };
 
     loadAnalytics();
-  }, [selectedPeriod, selectedCompany]);
+  }, [selectedPeriod, selectedCompany, salesCache]);
 
-  const loadCompanies = async () => {
+  // Reload warehouse data when company changes
+  React.useEffect(() => {
+    if (selectedCompany) {
+      loadWarehouseData();
+    }
+  }, [selectedCompany, loadWarehouseData]);
+
+  const loadCompanies = useCallback(async () => {
     try {
       const companiesRef = collection(db, 'companies');
       const snapshot = await getDocs(companiesRef);
@@ -128,25 +171,37 @@ const WarehouseOverview = () => {
     } catch (error) {
       console.error('Error loading companies:', error);
     }
-  };
+  }, [selectedCompany]);
 
-  const loadWarehouseData = async () => {
+  const loadWarehouseData = useCallback(async () => {
     try {
-      // Get all products
+      setWarehouseLoading(true);
+      
+      // Get all products (or filter by company if selected)
       const productsRef = collection(db, 'products');
       const productsSnapshot = await getDocs(productsRef);
-      const products = productsSnapshot.docs.map(doc => ({
+      let products = productsSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
 
-      // Get inventory data
+      // Filter products by selected company if one is selected
+      if (selectedCompany) {
+        products = products.filter(product => product.companyId === selectedCompany.id);
+      }
+
+      // Get inventory data (or filter by company if selected)
       const inventoryRef = collection(db, 'inventory');
       const inventorySnapshot = await getDocs(inventoryRef);
-      const inventory = inventorySnapshot.docs.map(doc => ({
+      let inventory = inventorySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
+
+      // Filter inventory by selected company if one is selected
+      if (selectedCompany) {
+        inventory = inventory.filter(item => item.companyId === selectedCompany.id);
+      }
 
       // Calculate warehouse statistics
       const totalProducts = products.length;
@@ -175,12 +230,26 @@ const WarehouseOverview = () => {
 
     } catch (error) {
       console.error('Error loading warehouse data:', error);
+      // Set default values on error
+      setWarehouseStats({
+        totalProducts: 0,
+        totalStockQuantity: 0,
+        inStockProducts: 0,
+        outOfStockProducts: 0,
+        lowStockProducts: 0,
+        totalStockValue: 0
+      });
+    } finally {
+      setWarehouseLoading(false);
     }
-  };
+  }, [selectedCompany]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
+      // Clear sales cache on refresh to ensure fresh data
+      setSalesCache({});
+      
       await Promise.all([
         loadCompanies(),
         loadWarehouseData(),
@@ -190,6 +259,59 @@ const WarehouseOverview = () => {
     } finally {
       setRefreshing(false);
     }
+  };
+
+  const generateSampleSalesData = async () => {
+    Alert.alert(
+      "Generate Sample Sales Data",
+      "This will create realistic sales data for the last 3 months to test analytics functionality. Continue?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Generate",
+          onPress: async () => {
+            try {
+              setRefreshing(true);
+              console.log('🌱 Starting sample sales data generation...');
+              
+              const result = await SalesDataSeeder.seedRealisticSalesData(
+                selectedCompany ? selectedCompany.id : null
+              );
+              
+              // Clear cache and refresh analytics after generating data
+              setSalesCache({});
+              
+              if (selectedCompany) {
+                // Trigger a fresh load by changing a state that will cause useEffect to run
+                setSalesLoading(true);
+                setTimeout(() => {
+                  setSalesLoading(false);
+                }, 100);
+              }
+              
+              Alert.alert(
+                "Success!",
+                `Generated ${result.salesCreated} sales records over ${result.months} months. Check the sales analytics above!`,
+                [{ text: "OK" }]
+              );
+              
+            } catch (error) {
+              console.error('Error generating sample sales data:', error);
+              Alert.alert(
+                "Error",
+                "Failed to generate sample sales data. Please try again.",
+                [{ text: "OK" }]
+              );
+            } finally {
+              setRefreshing(false);
+            }
+          }
+        }
+      ]
+    );
   };
 
   const getPeriodLabel = () => {
@@ -277,9 +399,21 @@ const WarehouseOverview = () => {
               colors={['#3b82f6', '#2563eb']}
               style={styles.primaryStatGradient}
             >
-              <FontAwesome5 name="boxes" size={32} color="white" style={styles.primaryStatIcon} />
-              <Text style={styles.primaryStatNumber}>{warehouseStats.totalProducts}</Text>
-              <Text style={styles.primaryStatLabel}>Total Products</Text>
+              <View style={styles.primaryStatContent}>
+                {(loading || warehouseLoading) ? (
+                  <>
+                    <ActivityIndicator size="large" color="white" style={styles.primaryStatIcon} />
+                    <Text style={styles.primaryStatNumber}>--</Text>
+                    <Text style={styles.primaryStatLabel}>Loading...</Text>
+                  </>
+                ) : (
+                  <>
+                    <FontAwesome5 name="boxes" size={32} color="white" style={styles.primaryStatIcon} />
+                    <Text style={styles.primaryStatNumber}>{warehouseStats.totalProducts}</Text>
+                    <Text style={styles.primaryStatLabel}>Total Products</Text>
+                  </>
+                )}
+              </View>
             </LinearGradient>
           </View>
           
@@ -288,9 +422,21 @@ const WarehouseOverview = () => {
               colors={['#8b5cf6', '#7c3aed']}
               style={styles.primaryStatGradient}
             >
-              <FontAwesome5 name="warehouse" size={32} color="white" style={styles.primaryStatIcon} />
-              <Text style={styles.primaryStatNumber}>{warehouseStats.totalStockQuantity}</Text>
-              <Text style={styles.primaryStatLabel}>Items in Warehouse</Text>
+              <View style={styles.primaryStatContent}>
+                {(loading || warehouseLoading) ? (
+                  <>
+                    <ActivityIndicator size="large" color="white" style={styles.primaryStatIcon} />
+                    <Text style={styles.primaryStatNumber}>--</Text>
+                    <Text style={styles.primaryStatLabel}>Loading...</Text>
+                  </>
+                ) : (
+                  <>
+                    <FontAwesome5 name="warehouse" size={32} color="white" style={styles.primaryStatIcon} />
+                    <Text style={styles.primaryStatNumber}>{warehouseStats.totalStockQuantity}</Text>
+                    <Text style={styles.primaryStatLabel}>Items in Warehouse</Text>
+                  </>
+                )}
+              </View>
             </LinearGradient>
           </View>
         </View>
@@ -298,21 +444,57 @@ const WarehouseOverview = () => {
         {/* Secondary Stats Row */}
         <View style={styles.secondaryStatsRow}>
           <View style={[styles.secondaryStatCard, styles.inStockCard]}>
-            <FontAwesome5 name="check-circle" size={24} color="#059669" />
-            <Text style={styles.secondaryStatNumber}>{warehouseStats.inStockProducts}</Text>
-            <Text style={styles.secondaryStatLabel}>In Stock</Text>
+            <View style={styles.secondaryStatContent}>
+              {(loading || warehouseLoading) ? (
+                <>
+                  <ActivityIndicator size="small" color="#059669" />
+                  <Text style={styles.secondaryStatNumber}>--</Text>
+                  <Text style={styles.secondaryStatLabel}>Loading...</Text>
+                </>
+              ) : (
+                <>
+                  <FontAwesome5 name="check-circle" size={24} color="#059669" />
+                  <Text style={styles.secondaryStatNumber}>{warehouseStats.inStockProducts}</Text>
+                  <Text style={styles.secondaryStatLabel}>In Stock</Text>
+                </>
+              )}
+            </View>
           </View>
           
           <View style={[styles.secondaryStatCard, styles.lowStockCard]}>
-            <FontAwesome5 name="exclamation-triangle" size={24} color="#d97706" />
-            <Text style={styles.secondaryStatNumber}>{warehouseStats.lowStockProducts}</Text>
-            <Text style={styles.secondaryStatLabel}>Low Stock</Text>
+            <View style={styles.secondaryStatContent}>
+              {(loading || warehouseLoading) ? (
+                <>
+                  <ActivityIndicator size="small" color="#d97706" />
+                  <Text style={styles.secondaryStatNumber}>--</Text>
+                  <Text style={styles.secondaryStatLabel}>Loading...</Text>
+                </>
+              ) : (
+                <>
+                  <FontAwesome5 name="exclamation-triangle" size={24} color="#d97706" />
+                  <Text style={styles.secondaryStatNumber}>{warehouseStats.lowStockProducts}</Text>
+                  <Text style={styles.secondaryStatLabel}>Low Stock</Text>
+                </>
+              )}
+            </View>
           </View>
           
           <View style={[styles.secondaryStatCard, styles.outOfStockCard]}>
-            <FontAwesome5 name="times-circle" size={24} color="#dc2626" />
-            <Text style={styles.secondaryStatNumber}>{warehouseStats.outOfStockProducts}</Text>
-            <Text style={styles.secondaryStatLabel}>Out of Stock</Text>
+            <View style={styles.secondaryStatContent}>
+              {(loading || warehouseLoading) ? (
+                <>
+                  <ActivityIndicator size="small" color="#dc2626" />
+                  <Text style={styles.secondaryStatNumber}>--</Text>
+                  <Text style={styles.secondaryStatLabel}>Loading...</Text>
+                </>
+              ) : (
+                <>
+                  <FontAwesome5 name="times-circle" size={24} color="#dc2626" />
+                  <Text style={styles.secondaryStatNumber}>{warehouseStats.outOfStockProducts}</Text>
+                  <Text style={styles.secondaryStatLabel}>Out of Stock</Text>
+                </>
+              )}
+            </View>
           </View>
         </View>
 
@@ -322,7 +504,14 @@ const WarehouseOverview = () => {
             <FontAwesome5 name="rupee-sign" size={20} color="#059669" />
             <Text style={styles.valueTitle}>Total Stock Value</Text>
           </View>
-          <Text style={styles.valueAmount}>₹{warehouseStats.totalStockValue.toLocaleString()}</Text>
+          {(loading || warehouseLoading) ? (
+            <View style={styles.valueLoadingContainer}>
+              <ActivityIndicator size="small" color="#059669" />
+              <Text style={styles.valueAmount}>--</Text>
+            </View>
+          ) : (
+            <Text style={styles.valueAmount}>₹{warehouseStats.totalStockValue.toLocaleString()}</Text>
+          )}
           <Text style={styles.valueSubtext}>Estimated inventory worth</Text>
         </View>
       </View>
@@ -362,10 +551,21 @@ const WarehouseOverview = () => {
               colors={['#ef4444', '#dc2626']}
               style={styles.salesStatGradient}
             >
-              <FontAwesome5 name="shopping-bag" size={28} color="white" style={styles.salesStatIcon} />
-              <Text style={styles.salesStatNumber}>{salesStats.itemsSold}</Text>
-              <Text style={styles.salesStatLabel}>Items Sold</Text>
-              <Text style={styles.salesStatPeriod}>({getPeriodLabel()})</Text>
+              {salesLoading ? (
+                <>
+                  <ActivityIndicator size="large" color="white" style={styles.salesStatIcon} />
+                  <Text style={styles.salesStatNumber}>--</Text>
+                  <Text style={styles.salesStatLabel}>Loading...</Text>
+                  <Text style={styles.salesStatPeriod}>({getPeriodLabel()})</Text>
+                </>
+              ) : (
+                <>
+                  <FontAwesome5 name="shopping-bag" size={28} color="white" style={styles.salesStatIcon} />
+                  <Text style={styles.salesStatNumber}>{salesStats.itemsSold}</Text>
+                  <Text style={styles.salesStatLabel}>Items Sold</Text>
+                  <Text style={styles.salesStatPeriod}>({getPeriodLabel()})</Text>
+                </>
+              )}
             </LinearGradient>
           </View>
           
@@ -374,28 +574,46 @@ const WarehouseOverview = () => {
               colors={['#10b981', '#059669']}
               style={styles.salesStatGradient}
             >
-              <FontAwesome5 name="check-double" size={28} color="white" style={styles.salesStatIcon} />
-              <Text style={styles.salesStatNumber}>{Math.max(0, getAvailableStock())}</Text>
-              <Text style={styles.salesStatLabel}>Still Available</Text>
-              <Text style={styles.salesStatPeriod}>(Current Stock)</Text>
+              {salesLoading ? (
+                <>
+                  <ActivityIndicator size="large" color="white" style={styles.salesStatIcon} />
+                  <Text style={styles.salesStatNumber}>--</Text>
+                  <Text style={styles.salesStatLabel}>Loading...</Text>
+                  <Text style={styles.salesStatPeriod}>(Current Stock)</Text>
+                </>
+              ) : (
+                <>
+                  <FontAwesome5 name="check-double" size={28} color="white" style={styles.salesStatIcon} />
+                  <Text style={styles.salesStatNumber}>{Math.max(0, getAvailableStock())}</Text>
+                  <Text style={styles.salesStatLabel}>Still Available</Text>
+                  <Text style={styles.salesStatPeriod}>(Current Stock)</Text>
+                </>
+              )}
             </LinearGradient>
           </View>
         </View>
 
         {/* Additional Sales Metrics */}
         <View style={styles.additionalMetrics}>
-          <View style={styles.metricRow}>
-            <View style={styles.metricItem}>
-              <FontAwesome5 name="chart-line" size={16} color="#6b7280" />
-              <Text style={styles.metricLabel}>Total Orders</Text>
-              <Text style={styles.metricValue}>{salesStats.totalOrders}</Text>
+          {salesLoading ? (
+            <View style={styles.metricsLoadingContainer}>
+              <ActivityIndicator size="small" color="#6b7280" />
+              <Text style={styles.metricsLoadingText}>Loading sales metrics...</Text>
             </View>
-            <View style={styles.metricItem}>
-              <FontAwesome5 name="rupee-sign" size={16} color="#6b7280" />
-              <Text style={styles.metricLabel}>Revenue</Text>
-              <Text style={styles.metricValue}>₹{salesStats.totalRevenue.toLocaleString()}</Text>
+          ) : (
+            <View style={styles.metricRow}>
+              <View style={styles.metricItem}>
+                <FontAwesome5 name="chart-line" size={16} color="#6b7280" />
+                <Text style={styles.metricLabel}>Total Orders</Text>
+                <Text style={styles.metricValue}>{salesStats.totalOrders}</Text>
+              </View>
+              <View style={styles.metricItem}>
+                <FontAwesome5 name="rupee-sign" size={16} color="#6b7280" />
+                <Text style={styles.metricLabel}>Revenue</Text>
+                <Text style={styles.metricValue}>₹{salesStats.totalRevenue.toLocaleString()}</Text>
+              </View>
             </View>
-          </View>
+          )}
         </View>
       </View>
 
@@ -424,7 +642,10 @@ const WarehouseOverview = () => {
       <View style={styles.actionsSection}>
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         <View style={styles.actionButtons}>
-          <TouchableOpacity style={styles.actionButton}>
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={() => router.push('/addStock')}
+          >
             <FontAwesome5 name="plus-circle" size={20} color="#0080ff" />
             <Text style={styles.actionButtonText}>Add Stock</Text>
           </TouchableOpacity>
@@ -437,6 +658,14 @@ const WarehouseOverview = () => {
           <TouchableOpacity style={styles.actionButton}>
             <FontAwesome5 name="bell" size={20} color="#0080ff" />
             <Text style={styles.actionButtonText}>Stock Alerts</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={[styles.actionButton, styles.seedDataButton]}
+            onPress={generateSampleSalesData}
+          >
+            <FontAwesome5 name="seedling" size={20} color="#10b981" />
+            <Text style={[styles.actionButtonText, styles.seedDataText]}>Generate Sample Data</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -461,8 +690,8 @@ const styles = StyleSheet.create({
     color: '#6b7280',
   },
   header: {
-    paddingTop: 60,
-    paddingBottom: 30,
+    paddingTop: 20,
+    paddingBottom: 20,
     paddingHorizontal: 20,
   },
   headerContent: {
@@ -552,6 +781,13 @@ const styles = StyleSheet.create({
   primaryStatGradient: {
     padding: 20,
     alignItems: 'center',
+    minHeight: 120,
+    justifyContent: 'center',
+  },
+  primaryStatContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
   },
   primaryStatIcon: {
     marginBottom: 12,
@@ -561,6 +797,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: 'white',
     marginBottom: 4,
+    minHeight: 38,
+    textAlignVertical: 'center',
   },
   primaryStatLabel: {
     fontSize: 14,
@@ -583,6 +821,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
+    minHeight: 90,
+    justifyContent: 'center',
+  },
+  secondaryStatContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
   },
   secondaryStatNumber: {
     fontSize: 20,
@@ -590,6 +835,8 @@ const styles = StyleSheet.create({
     color: '#111827',
     marginTop: 8,
     marginBottom: 4,
+    minHeight: 24,
+    textAlignVertical: 'center',
   },
   secondaryStatLabel: {
     fontSize: 12,
@@ -621,6 +868,12 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '700',
     color: '#059669',
+    marginBottom: 4,
+  },
+  valueLoadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
     marginBottom: 4,
   },
   valueSubtext: {
@@ -819,6 +1072,26 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: '#374151',
+  },
+  seedDataButton: {
+    backgroundColor: '#f0fdf4',
+    borderColor: '#86efac',
+  },
+  seedDataText: {
+    color: '#10b981',
+    fontWeight: '600',
+  },
+  metricsLoadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
+    gap: 12,
+  },
+  metricsLoadingText: {
+    fontSize: 14,
+    color: '#6b7280',
+    fontStyle: 'italic',
   },
 });
 

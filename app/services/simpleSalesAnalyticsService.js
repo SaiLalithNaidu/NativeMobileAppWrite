@@ -267,10 +267,17 @@ export class SimpleSalesAnalyticsService {
   static async recordSale(saleData) {
     try {
       const saleRecord = {
+        orderId: saleData.orderId,
         productId: saleData.productId,
+        productTitle: saleData.productTitle,
         companyId: saleData.companyId,
-        quantity: saleData.quantity,
-        revenue: saleData.revenue,
+        categoryId: saleData.categoryId,
+        quantity: saleData.quantity || 1,
+        unitPrice: saleData.unitPrice || saleData.revenue,
+        revenue: saleData.revenue || saleData.totalAmount,
+        totalAmount: saleData.totalAmount || saleData.revenue,
+        customerEmail: saleData.customerEmail,
+        customerName: saleData.customerName,
         saleDate: saleData.saleDate || new Date(),
         period: saleData.period || new Date().toISOString().split('T')[0],
         createdAt: serverTimestamp(),

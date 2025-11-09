@@ -17,14 +17,14 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
 import {
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
@@ -102,15 +102,27 @@ export default function CheckoutScreen() {
    * @returns {boolean} True if form is valid
    */
   const validateForm = () => {
+    console.log('🔍 Validating form fields:', {
+      customerName: `"${customerName}"`,
+      customerNameTrimmed: `"${customerName.trim()}"`,
+      customerNameLength: customerName.length,
+      customerEmail: `"${customerEmail}"`,
+      customerPhone: `"${customerPhone}"`
+    });
+    
     // Validate customer name (required)
     if (!customerName.trim()) {
+      console.log('❌ Customer name validation failed');
       Toast.show({
         type: 'error',
         text1: 'Name Required',
-        text2: 'Please enter your name',
+        text2: 'Please enter your name to complete the order',
+        visibilityTime: 4000,
+        position: 'top'
       });
       return false;
     }
+    console.log('✅ Customer name validation passed');
 
     // Validate email format (if provided)
     if (customerEmail && !isValidEmail(customerEmail)) {
@@ -166,14 +178,34 @@ export default function CheckoutScreen() {
    */
   const handlePlaceOrder = async () => {
     console.log('Place Order button pressed');
+    console.log('🔍 Debug info:', {
+      customerName: customerName,
+      customerEmail: customerEmail,
+      customerPhone: customerPhone,
+      cartItemsCount: cartItems.length
+    });
     
     // Validate form inputs
     if (!validateForm()) {
+      console.log('❌ Form validation failed - focusing on customer name field');
+      // Focus on the first required field (customer name) to help user
+      if (!customerName.trim()) {
+        console.log('🎯 Customer name is empty, showing prominent error');
+        Toast.show({
+          type: 'error',
+          text1: 'Please Enter Your Name',
+          text2: 'Your name is required to complete the order',
+          visibilityTime: 4000,
+          position: 'top'
+        });
+      }
       return;
     }
+    console.log('✅ Form validation passed');
 
     // Check cart is not empty
     if (cartItems.length === 0) {
+      console.log('❌ Cart is empty');
       Toast.show({
         type: 'error',
         text1: 'Cart is Empty',
@@ -181,6 +213,7 @@ export default function CheckoutScreen() {
       });
       return;
     }
+    console.log('✅ Cart validation passed');
 
     try {
       setIsProcessing(true);
@@ -189,7 +222,7 @@ export default function CheckoutScreen() {
       const paidAmountValue = paidAmount.trim() ? parseFloat(paidAmount) : 0;
 
       // Create order data object
-      const orderData = createOrderObject({
+      const orderData = await createOrderObject({
         customerName: customerName.trim(),
         customerEmail: customerEmail.trim() || undefined,
         customerPhone: customerPhone.trim() || undefined,

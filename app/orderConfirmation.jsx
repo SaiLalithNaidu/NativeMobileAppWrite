@@ -3,27 +3,26 @@
  * Shows order success, generates PDF, allows sharing, and saves to database
  */
 
-import { useState, useEffect } from 'react';
+import * as Print from 'expo-print';
+import { router, useLocalSearchParams } from 'expo-router';
+import * as Sharing from 'expo-sharing';
+import { useCallback, useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Alert,
-  Platform,
-  Linking,
   ActivityIndicator,
+  Alert,
+  Linking,
+  Platform,
   ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router, useLocalSearchParams } from 'expo-router';
+import Toast from 'react-native-toast-message';
 import { useCart } from '../contexts/CartContext';
 import { saveOrderToDatabase } from './services/billingService';
 import { generateBillHTML } from './services/pdfService';
-import Toast from 'react-native-toast-message';
-import * as Print from 'expo-print';
-import * as Sharing from 'expo-sharing';
-import * as FileSystem from 'expo-file-system';
 
 export default function OrderConfirmationScreen() {
   const { clearCart } = useCart();
@@ -34,7 +33,6 @@ export default function OrderConfirmationScreen() {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
   const [orderSaved, setOrderSaved] = useState(false);
-  const [firebaseDocId, setFirebaseDocId] = useState(null);
 
   useEffect(() => {
     // Parse order data from params
@@ -44,8 +42,21 @@ export default function OrderConfirmationScreen() {
         setOrderData(parsedOrder);
         console.log('Order loaded:', parsedOrder.orderId);
         
-        // Auto-save order to database
-        saveOrder(parsedOrder);
+        // Check if order is already saved (orderId param indicates it's already saved)
+        if (params.orderId) {
+          console.log('Order already saved with Firebase ID:', params.orderId);
+          setOrderSaved(true);
+          // Clear cart since order is already saved
+          clearCart();
+          Toast.show({
+            type: 'success',
+            text1: 'Order Placed!',
+            text2: 'Your order has been saved successfully',
+          });
+        } else {
+          // Auto-save order to database only if not already saved
+          saveOrder(parsedOrder);
+        }
       } catch (error) {
         console.error('Error parsing order data:', error);
         Toast.show({
@@ -55,12 +66,12 @@ export default function OrderConfirmationScreen() {
         });
       }
     }
-  }, [params.orderData]);
+  }, [params.orderData, params.orderId, saveOrder, clearCart]);
 
   /**
    * Save order to Firebase database
    */
-  const saveOrder = async (order) => {
+  const saveOrder = useCallback(async (order) => {
     if (orderSaved) return;
 
     try {
@@ -69,7 +80,6 @@ export default function OrderConfirmationScreen() {
       
       const docId = await saveOrderToDatabase(order);
       
-      setFirebaseDocId(docId);
       setOrderSaved(true);
       console.log('Order saved successfully. Doc ID:', docId);
       
@@ -92,7 +102,7 @@ export default function OrderConfirmationScreen() {
     } finally {
       setIsSavingOrder(false);
     }
-  };
+  }, [orderSaved, clearCart]);
 
   /**
    * Generate PDF invoice
@@ -238,7 +248,7 @@ export default function OrderConfirmationScreen() {
    * Handle back to home
    */
   const handleBackToHome = () => {
-    router.replace('/(tabs)');
+    router.replace('/(tabs)/home');
   };
 
   if (!orderData) {
