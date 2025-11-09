@@ -25,9 +25,9 @@
  */
 
 import { useEffect, useMemo, useState } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
-import { searchService } from '../../app/services/searchService';
 import { searchHistoryService } from '../../app/services/searchHistoryService';
+import { searchService } from '../../app/services/searchService';
+import { useAuth } from '../../contexts/AuthContext';
 
 export const useSearch = () => {
   const { user } = useAuth();
