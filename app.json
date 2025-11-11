@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Ramesh Aqua",
-    "slug": "ramesh-aqua",
+    "slug": "ramesh-aqua-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -49,13 +49,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "906e2518-9448-458e-a1f6-6ceba3eb5037"
+        "projectId": "ac16db0b-3b84-4a69-9b2c-599e05b7091e"
       }
     },
-    "owner": "sailalith",
-    "runtimeVersion": "1.0.0",
-    "updates": {
-      "url": "https://u.expo.dev/906e2518-9448-458e-a1f6-6ceba3eb5037"
-    }
+    "runtimeVersion": "1.0.0"
   }
 }
