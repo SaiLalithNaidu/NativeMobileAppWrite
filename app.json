@@ -4,12 +4,16 @@
     "slug": "ramesh-aqua",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/app-logo.png",
+    "icon": "./assets/images/icon.png",
     "scheme": "nativemobile",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "n",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -32,7 +36,8 @@
       "backgroundColor": "#002147"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -41,8 +46,13 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "d9b5b3b1-6286-4bfc-87d0-f744dd01c07c"
+        "projectId": "906e2518-9448-458e-a1f6-6ceba3eb5037"
       }
+    },
+    "owner": "sailalith",
+    "runtimeVersion": "1.0.0",
+    "updates": {
+      "url": "https://u.expo.dev/906e2518-9448-458e-a1f6-6ceba3eb5037"
     }
   }
 }

@@ -1,0 +1,5 @@
+scripts/
+.github/
+BUILD_GUIDE.md
+*.md
+!README.md

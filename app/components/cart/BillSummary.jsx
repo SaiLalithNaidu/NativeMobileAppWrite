@@ -83,7 +83,7 @@ export const BillSummary = ({ summary }) => {
         <View style={styles.savingsContainer}>
           <FontAwesome5 name="check-circle" size={14} color="#28a745" />
           <Text style={styles.savingsText}>
-            You're saving ₹{savings.toFixed(2)} on this order!
+            You&apos;re saving ₹{savings.toFixed(2)} on this order!
           </Text>
         </View>
       )}
