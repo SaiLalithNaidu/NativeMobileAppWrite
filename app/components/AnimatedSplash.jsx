@@ -82,7 +82,7 @@ const AnimatedSplash = ({ onFinish, children }) => {
     return (
       <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
         <Animated.Image
-          source={require('../../assets/images/app_logo.jpg')}
+          source={require('../../assets/images/icon.png')}
           style={[
             styles.logo,
             {
