@@ -48,7 +48,7 @@ export default function TabsLayout() {
             headerLeft: () => (
               <View style={styles.logoContainer}>
                 <Image 
-                  source={require('../../assets/images/app_logo.png')}
+                  source={require('../../assets/images/app_logo.jpg')}
                   style={styles.logoImage}
                   resizeMode="contain"
                 />
