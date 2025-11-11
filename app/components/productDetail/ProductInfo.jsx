@@ -26,7 +26,18 @@ export const ProductInfo = ({ product, onAddToCart, onRemoveFromCart, quantity }
       try {
         setLoadingStock(true);
         const inventory = await InventoryService.getProductInventory(product.id);
-        setStockInfo(inventory);
+        
+        // If no inventory record exists, treat as out of stock
+        if (!inventory) {
+          setStockInfo({
+            quantity: 0,
+            isOutOfStock: true,
+            isLowStock: false,
+            lowStockThreshold: 5
+          });
+        } else {
+          setStockInfo(inventory);
+        }
       } catch (error) {
         console.error('Error fetching product stock:', error);
         setStockInfo({

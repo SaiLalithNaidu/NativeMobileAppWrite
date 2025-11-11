@@ -3,20 +3,19 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  FlatList,
-  Image,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    FlatList,
+    Image,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { useCart } from '../contexts/CartContext';
 import { db } from '../lib/firebase';
 import { COLORS } from '../src/utils/constants';
-import CustomHeader from './components/CustomHeader';
 import { InventoryService } from './services/inventoryService';
 
 const ProductsScreen = () => {
@@ -257,9 +256,13 @@ const ProductsScreen = () => {
   if (loading) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
-        <Stack.Screen options={{ headerShown: false }} />
-        <CustomHeader 
-          title={categoryName && categoryName !== 'undefined' ? categoryName : 'Products'}
+        <Stack.Screen 
+          options={{ 
+            headerShown: true,
+            headerTitle: categoryName && categoryName !== 'undefined' ? categoryName : 'Products',
+            headerTitleStyle: { fontSize: 18, fontWeight: 'bold' },
+            headerBackTitle: 'Back',
+          }} 
         />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={COLORS.PRIMARY} />
@@ -271,18 +274,22 @@ const ProductsScreen = () => {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
-      <Stack.Screen options={{ headerShown: false }} />
-      <CustomHeader 
-        title={categoryName && categoryName !== 'undefined' ? categoryName : 'Products'}
+      <Stack.Screen 
+        options={{ 
+          headerShown: true,
+          headerTitle: categoryName && categoryName !== 'undefined' ? categoryName : 'Products',
+          headerTitleStyle: { fontSize: 18, fontWeight: 'bold' },
+          headerBackTitle: 'Back',
+        }} 
       />
       <View style={styles.container}>
-        {/* Header */}
+        {/* Compact Header */}
         <View style={styles.headerContainer}>
           {companyName && (
             <Text style={styles.companyName}>{companyName}</Text>
           )}
           <Text style={styles.subtitle}>
-            {products.length} products available
+            {products.length} product{products.length !== 1 ? 's' : ''} available
           </Text>
         </View>
 
@@ -346,18 +353,18 @@ const styles = StyleSheet.create({
   headerContainer: {
     backgroundColor: 'white',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
   companyName: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#666',
   },
   // Grid View Styles
