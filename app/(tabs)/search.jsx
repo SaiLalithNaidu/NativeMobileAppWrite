@@ -16,11 +16,12 @@
 
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useCart } from '../../contexts/CartContext';
 import { COLORS } from '../../src/utils/constants';
 import { useSearch } from '../hooks/useSearch';
+import { InventoryService } from '../services/inventoryService';
 
 const Search = () => {
   const router = useRouter();
@@ -39,6 +40,51 @@ const Search = () => {
     handleSearchFromHistory,
     clearSearchHistory
   } = useSearch();
+
+  // Track inventory status for search results
+  const [stockStatus, setStockStatus] = useState({});
+  const [stockLoading, setStockLoading] = useState(false);
+
+  // Load stock status when search results change
+  useEffect(() => {
+    if (results.length > 0) {
+      loadStockStatus(results);
+    }
+  }, [results, loadStockStatus]);
+
+  // Load stock status for products
+  const loadStockStatus = useCallback(async (productList) => {
+    try {
+      setStockLoading(true);
+      const stockData = {};
+      
+      for (const product of productList) {
+        try {
+          const inventory = await InventoryService.getProductInventory(product.id);
+          stockData[product.id] = inventory || {
+            quantity: 0,
+            isOutOfStock: true,
+            isLowStock: false,
+            lowStockThreshold: 5
+          };
+        } catch (error) {
+          console.error(`Error loading stock for product ${product.id}:`, error);
+          stockData[product.id] = {
+            quantity: 0,
+            isOutOfStock: true,
+            isLowStock: false,
+            lowStockThreshold: 5
+          };
+        }
+      }
+      
+      setStockStatus(stockData);
+      setStockLoading(false);
+    } catch (error) {
+      console.error('Error loading stock status:', error);
+      setStockLoading(false);
+    }
+  }, []);
 
   /**
    * Navigate to product detail screen
@@ -89,6 +135,17 @@ const Search = () => {
   // Render add to cart controls
   const renderCartControls = (item) => {
     const quantity = getItemQuantity(item.id);
+    const stock = stockStatus[item.id];
+    const isOutOfStock = stock?.isOutOfStock || stock?.quantity === 0;
+    
+    // Show out of stock badge
+    if (isOutOfStock) {
+      return (
+        <View style={styles.outOfStockBadge}>
+          <Text style={styles.outOfStockText}>OUT OF STOCK</Text>
+        </View>
+      );
+    }
     
     if (quantity === 0) {
       return (
@@ -446,6 +503,18 @@ const styles = StyleSheet.create({
     color: '#333',
     minWidth: 24,
     textAlign: 'center',
+  },
+  outOfStockBadge: {
+    backgroundColor: '#FFE5E5',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  outOfStockText: {
+    color: '#D32F2F',
+    fontSize: 12,
+    fontWeight: '600',
   },
 });
 
