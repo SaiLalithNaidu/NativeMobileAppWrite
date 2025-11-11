@@ -94,6 +94,49 @@ export class InventoryService {
   }
 
   /**
+   * OPTIMIZED: Get inventory for multiple products in a single query (batch)
+   * @param {Array<string>} productIds - Array of product IDs
+   * @returns {Promise<Object>} Object with productId as key and inventory as value
+   */
+  static async getBatchProductInventory(productIds) {
+    try {
+      if (!productIds || productIds.length === 0) {
+        return {};
+      }
+
+      // Firestore 'in' operator supports up to 10 items, so batch in chunks of 10
+      const chunkSize = 10;
+      const chunks = [];
+      for (let i = 0; i < productIds.length; i += chunkSize) {
+        chunks.push(productIds.slice(i, i + chunkSize));
+      }
+
+      const inventoryRef = collection(db, 'inventory');
+      const allInventory = {};
+
+      // Execute all chunk queries in parallel
+      const chunkPromises = chunks.map(async (chunk) => {
+        const q = query(inventoryRef, where('productId', 'in', chunk));
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      });
+
+      const results = await Promise.all(chunkPromises);
+      
+      // Flatten results and convert to object
+      results.flat().forEach(inventory => {
+        allInventory[inventory.productId] = inventory;
+      });
+
+      console.log(`✅ Batch inventory fetched: ${Object.keys(allInventory).length}/${productIds.length} items`);
+      return allInventory;
+    } catch (error) {
+      console.error('❌ Error fetching batch inventory:', error);
+      throw new Error('Failed to fetch batch inventory');
+    }
+  }
+
+  /**
    * Update stock quantity (increase or decrease)
    * @param {string} productId - Product ID
    * @param {number} quantityChange - Positive to add, negative to subtract

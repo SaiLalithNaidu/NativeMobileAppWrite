@@ -14,14 +14,14 @@ import { useRouter } from 'expo-router';
 import { collection, getDocs } from 'firebase/firestore';
 import React, { useCallback, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    RefreshControl,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { db } from '../../lib/firebase';
 import { SimpleSalesAnalyticsService } from '../services/simpleSalesAnalyticsService';
@@ -788,11 +788,11 @@ const styles = StyleSheet.create({
   },
   primaryStatsRow: {
     flexDirection: 'row',
-    gap: 16,
+    justifyContent: 'space-between',
     marginBottom: 16,
   },
   primaryStatCard: {
-    flex: 1,
+    width: '48%',
     borderRadius: 16,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -804,8 +804,9 @@ const styles = StyleSheet.create({
   primaryStatGradient: {
     padding: 20,
     alignItems: 'center',
-    minHeight: 120,
+    height: 160,
     justifyContent: 'center',
+    borderRadius: 16,
   },
   primaryStatContent: {
     alignItems: 'center',

@@ -17,9 +17,10 @@
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { FlatList, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useCart } from '../../contexts/CartContext';
 import { COLORS } from '../../src/utils/constants';
+import { SkeletonProductGrid } from '../components/SkeletonLoader';
 import { useSearch } from '../hooks/useSearch';
 import { InventoryService } from '../services/inventoryService';
 
@@ -52,31 +53,27 @@ const Search = () => {
     }
   }, [results, loadStockStatus]);
 
-  // Load stock status for products
+  // Load stock status for products - OPTIMIZED with batch loading
   const loadStockStatus = useCallback(async (productList) => {
     try {
       setStockLoading(true);
-      const stockData = {};
       
-      for (const product of productList) {
-        try {
-          const inventory = await InventoryService.getProductInventory(product.id);
-          stockData[product.id] = inventory || {
-            quantity: 0,
-            isOutOfStock: true,
-            isLowStock: false,
-            lowStockThreshold: 5
-          };
-        } catch (error) {
-          console.error(`Error loading stock for product ${product.id}:`, error);
-          stockData[product.id] = {
-            quantity: 0,
-            isOutOfStock: true,
-            isLowStock: false,
-            lowStockThreshold: 5
-          };
-        }
-      }
+      // Extract product IDs
+      const productIds = productList.map(p => p.id);
+      
+      // Use batch inventory fetch (single optimized query)
+      const inventoryData = await InventoryService.getBatchProductInventory(productIds);
+      
+      // Fill in missing products with out-of-stock data
+      const stockData = {};
+      productList.forEach(product => {
+        stockData[product.id] = inventoryData[product.id] || {
+          quantity: 0,
+          isOutOfStock: true,
+          isLowStock: false,
+          lowStockThreshold: 5
+        };
+      });
       
       setStockStatus(stockData);
       setStockLoading(false);
@@ -97,12 +94,19 @@ const Search = () => {
     });
   };
 
-  // Loading state
+  // Loading state - Flipkart-style skeleton
   if (loading) {
     return (
-      <View style={styles.center}>
-  <ActivityIndicator size="large" color={COLORS.PRIMARY} />
-        <Text style={{ marginTop: 8, color: '#666' }}>Loading data…</Text>
+      <View style={styles.container}>
+        {/* Search Bar Skeleton */}
+        <View style={styles.searchSection}>
+          <View style={styles.searchContainer}>
+            <View style={[styles.searchInput, { backgroundColor: '#e0e0e0' }]} />
+          </View>
+        </View>
+        
+        {/* Product Grid Skeleton */}
+        <SkeletonProductGrid count={6} />
       </View>
     );
   }

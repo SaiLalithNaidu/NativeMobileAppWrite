@@ -11,11 +11,11 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { useCart } from '../contexts/CartContext';
 import { db } from '../lib/firebase';
 import { COLORS } from '../src/utils/constants';
+import { SkeletonProductGrid } from './components/SkeletonLoader';
 import { InventoryService } from './services/inventoryService';
 
 const ProductsScreen = () => {
@@ -31,35 +31,42 @@ const ProductsScreen = () => {
   // Extract simple params
   const { companyId, companyName, categoryId, categoryName } = params;
 
-  // Load stock status for products
+  // Load stock status for products - OPTIMIZED with batch loading
   const loadStockStatus = useCallback(async (productList) => {
     try {
       setStockLoading(true);
-      const stockData = {};
       
-      for (const product of productList) {
-        try {
-          const inventory = await InventoryService.getProductInventory(product.id);
-          stockData[product.id] = inventory || {
-            quantity: 0,
-            isOutOfStock: true,
-            isLowStock: false,
-            lowStockThreshold: 5
-          };
-        } catch (error) {
-          console.error(`Error loading stock for product ${product.id}:`, error);
-          stockData[product.id] = {
-            quantity: 0,
-            isOutOfStock: true,
-            isLowStock: false,
-            lowStockThreshold: 5
-          };
-        }
-      }
+      // Extract product IDs
+      const productIds = productList.map(p => p.id);
+      
+      // Use batch inventory fetch (single optimized query)
+      const inventoryData = await InventoryService.getBatchProductInventory(productIds);
+      
+      // Fill in missing products with out-of-stock data
+      const stockData = {};
+      productList.forEach(product => {
+        stockData[product.id] = inventoryData[product.id] || {
+          quantity: 0,
+          isOutOfStock: true,
+          isLowStock: false,
+          lowStockThreshold: 5
+        };
+      });
       
       setStockStatus(stockData);
     } catch (error) {
       console.error('Error loading stock status:', error);
+      // Set all products as out of stock on error
+      const stockData = {};
+      productList.forEach(product => {
+        stockData[product.id] = {
+          quantity: 0,
+          isOutOfStock: true,
+          isLowStock: false,
+          lowStockThreshold: 5
+        };
+      });
+      setStockStatus(stockData);
     } finally {
       setStockLoading(false);
     }
@@ -118,15 +125,17 @@ const ProductsScreen = () => {
       const snapshot = await getDocs(q);
       const productsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       console.log('✅ Products loaded:', productsData.length);
-      setProducts(productsData);
       
-      // Load stock status for the products
+      // Show products immediately
+      setProducts(productsData);
+      setLoading(false);
+      
+      // Load stock status in background (non-blocking)
       if (productsData.length > 0) {
-        await loadStockStatus(productsData);
+        loadStockStatus(productsData);
       }
     } catch (error) {
       console.error('❌ Error fetching products:', error);
-    } finally {
       setLoading(false);
     }
   }, [companyId, categoryId, loadStockStatus]);
@@ -255,7 +264,7 @@ const ProductsScreen = () => {
 
   if (loading) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+      <>
         <Stack.Screen 
           options={{ 
             headerShown: true,
@@ -264,16 +273,22 @@ const ProductsScreen = () => {
             headerBackTitle: 'Back',
           }} 
         />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={COLORS.PRIMARY} />
-          <Text style={styles.loadingText}>Loading products...</Text>
+        <View style={styles.container}>
+          {/* Compact Header Skeleton */}
+          <View style={styles.headerContainer}>
+            <View style={[styles.companyName, { backgroundColor: '#e0e0e0', height: 14 }]} />
+            <View style={[styles.subtitle, { backgroundColor: '#e0e0e0', height: 12, width: '40%', marginTop: 4 }]} />
+          </View>
+          
+          {/* Product Grid Skeleton */}
+          <SkeletonProductGrid count={6} />
         </View>
-      </SafeAreaView>
+      </>
     );
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+    <>
       <Stack.Screen 
         options={{ 
           headerShown: true,
@@ -330,7 +345,7 @@ const ProductsScreen = () => {
           </TouchableOpacity>
         )}
       </View>
-    </SafeAreaView>
+    </>
   );
 };
 

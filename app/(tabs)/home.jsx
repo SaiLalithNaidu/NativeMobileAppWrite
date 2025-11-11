@@ -4,17 +4,16 @@ import { useRouter } from 'expo-router';
 import { collection, getDocs } from 'firebase/firestore';
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  FlatList,
-  Image,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    FlatList,
+    Image,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from "react-native";
 import { db } from '../../lib/firebase';
-import { COLORS } from '../../src/utils/constants';
 import ImageCarousel from '../components/imageCarousel';
+import { SkeletonCompanyCard } from '../components/SkeletonLoader';
 
 // ============================================================================
 // SCREEN COMPONENTS
@@ -230,9 +229,32 @@ const Index = () => {
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color={COLORS.PRIMARY} />
-        <Text style={styles.loadingText}>Loading companies...</Text>
+      <View style={styles.mainContainer}>
+        {/* Header */}
+        <LinearGradient
+          colors={['#002147', '#004080']}
+          style={styles.headerGradient}
+        >
+          <View style={styles.headerContent}>
+            <View style={styles.welcomeContainer}>
+              <Text style={styles.welcomeText}>Welcome to</Text>
+              <Text style={styles.brandText}>Ramesh Aqua</Text>
+              <Text style={styles.taglineText}>🦐 Feeds & Needs</Text>
+            </View>
+          </View>
+        </LinearGradient>
+
+        {/* Carousel Skeleton */}
+        <View style={styles.imageContainer}>
+          <View style={[styles.carouselSkeleton, { backgroundColor: '#e0e0e0', height: 200, borderRadius: 12 }]} />
+        </View>
+
+        {/* Company Cards Skeleton */}
+        <View style={styles.contentContainer}>
+          <SkeletonCompanyCard />
+          <SkeletonCompanyCard />
+          <SkeletonCompanyCard />
+        </View>
       </View>
     );
   }

@@ -4,7 +4,6 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
     FlatList,
     Image,
     StyleSheet,
@@ -13,7 +12,7 @@ import {
     View
 } from 'react-native';
 import { db } from '../lib/firebase';
-import { COLORS } from '../src/utils/constants';
+import { SkeletonCategoryCard } from './components/SkeletonLoader';
 
 const CategoriesScreen = () => {
   const router = useRouter();
@@ -130,14 +129,34 @@ const CategoriesScreen = () => {
         <Stack.Screen 
           options={{
             headerShown: true,
-            headerTitle: company?.name || 'Categories',
-            headerTitleStyle: { fontSize: 18, fontWeight: 'bold' },
+            headerTitle: '',
+            headerStyle: { 
+              backgroundColor: '#002147',
+            },
+            headerTintColor: 'white',
             headerBackTitle: 'Back',
           }} 
         />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={COLORS.PRIMARY} />
-          <Text style={styles.loadingText}>Loading categories...</Text>
+        <View style={styles.container}>
+          {/* Header */}
+          <LinearGradient
+            colors={['#002147', '#004080']}
+            style={styles.headerGradient}
+          >
+            <View style={styles.headerContent}>
+              <View style={styles.companyIconContainer}>
+                <FontAwesome5 name="folder-open" size={24} color="white" />
+              </View>
+              <View style={[styles.headerTitle, { backgroundColor: '#ffffff33', height: 24, borderRadius: 4, width: '60%' }]} />
+            </View>
+          </LinearGradient>
+
+          {/* Categories Skeleton */}
+          <View style={styles.categoriesGrid}>
+            {Array.from({ length: 8 }).map((_, index) => (
+              <SkeletonCategoryCard key={index} />
+            ))}
+          </View>
         </View>
       </>
     );

@@ -24,6 +24,7 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
+import { SkeletonInventoryItem, SkeletonStatCardRow } from '../components/SkeletonLoader';
 import StockAlert from '../components/StockAlert';
 import StockStatusBadge from '../components/StockStatusBadge';
 import { InventoryService } from '../services/inventoryService';
@@ -207,10 +208,42 @@ const InventoryDashboard = ({ companyId, companyName = "Company" }) => {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0080ff" />
-        <Text style={styles.loadingText}>Loading Inventory Dashboard...</Text>
-      </View>
+      <ScrollView style={styles.container}>
+        {/* Header Skeleton */}
+        <View style={styles.header}>
+          <View>
+            <View style={{ width: 180, height: 18, backgroundColor: '#e5e7eb', borderRadius: 6, marginBottom: 8 }} />
+            <View style={{ width: 120, height: 14, backgroundColor: '#e5e7eb', borderRadius: 6 }} />
+          </View>
+        </View>
+
+        {/* Stats Skeleton */}
+        <View style={styles.statsContainer}>
+          <SkeletonStatCardRow />
+          <SkeletonStatCardRow />
+        </View>
+
+        {/* Sales Summary Skeleton */}
+        <View style={styles.analyticsSection}>
+          <View style={{ height: 18, width: 140, backgroundColor: '#e5e7eb', borderRadius: 6, marginBottom: 16 }} />
+          <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
+            {[0,1,2].map((i) => (
+              <View key={i} style={{ alignItems: 'center' }}>
+                <View style={{ height: 20, width: 60, backgroundColor: '#e5e7eb', borderRadius: 6, marginBottom: 6 }} />
+                <View style={{ height: 12, width: 50, backgroundColor: '#e5e7eb', borderRadius: 6 }} />
+              </View>
+            ))}
+          </View>
+        </View>
+
+        {/* Inventory List Skeleton */}
+        <View style={styles.inventorySection}>
+          <View style={{ height: 18, width: 160, backgroundColor: '#e5e7eb', borderRadius: 6, marginBottom: 12 }} />
+          {Array.from({ length: 6 }).map((_, idx) => (
+            <SkeletonInventoryItem key={idx} />
+          ))}
+        </View>
+      </ScrollView>
     );
   }
 
@@ -456,11 +489,11 @@ const styles = StyleSheet.create({
   },
   statsRow: {
     flexDirection: 'row',
-    gap: 12,
+    justifyContent: 'space-between',
     marginBottom: 12,
   },
   statCard: {
-    flex: 1,
+    width: '48%',
     backgroundColor: 'white',
     padding: 16,
     borderRadius: 16,
