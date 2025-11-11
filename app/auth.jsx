@@ -118,7 +118,7 @@ export default function AuthScreen()
             >
                 <View style={styles.logoContainer}>
                     <Image 
-                        source={require('../assets/images/app-logo.png')}
+                        source={require('../assets/images/app_logo.png')}
                         style={styles.logo}
                         resizeMode="contain"
                     />
