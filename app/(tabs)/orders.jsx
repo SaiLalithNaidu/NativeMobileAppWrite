@@ -15,18 +15,18 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { collection, getDocs, orderBy, query } from 'firebase/firestore';
 import React, { useCallback, useState } from 'react';
 import {
-  ActivityIndicator,
-  FlatList,
-  RefreshControl,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    FlatList,
+    RefreshControl,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { db } from '../../lib/firebase';
 import { COLORS } from '../../src/utils/constants';
+import OrdersSkeleton from '../components/skeletons/OrdersSkeleton';
 
 export default function OrdersScreen() {
   const router = useRouter();
@@ -286,12 +286,7 @@ export default function OrdersScreen() {
 
   // Loading state
   if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.PRIMARY} />
-        <Text style={styles.loadingText}>Loading orders...</Text>
-      </View>
-    );
+    return <OrdersSkeleton />;
   }
 
   const filteredOrders = getFilteredOrders();

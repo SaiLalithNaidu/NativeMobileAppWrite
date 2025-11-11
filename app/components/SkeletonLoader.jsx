@@ -17,12 +17,12 @@ export const SkeletonProductCard = () => {
       Animated.sequence([
         Animated.timing(shimmerAnim, {
           toValue: 1,
-          duration: 1000,
+          duration: 600,
           useNativeDriver: true,
         }),
         Animated.timing(shimmerAnim, {
           toValue: 0,
-          duration: 1000,
+          duration: 600,
           useNativeDriver: true,
         }),
       ])
@@ -33,7 +33,7 @@ export const SkeletonProductCard = () => {
 
   const opacity = shimmerAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.3, 0.7],
+    outputRange: [0.2, 0.9],
   });
 
   return (
@@ -77,12 +77,12 @@ export const SkeletonSearchItem = () => {
       Animated.sequence([
         Animated.timing(shimmerAnim, {
           toValue: 1,
-          duration: 1000,
+          duration: 600,
           useNativeDriver: true,
         }),
         Animated.timing(shimmerAnim, {
           toValue: 0,
-          duration: 1000,
+          duration: 600,
           useNativeDriver: true,
         }),
       ])
@@ -93,7 +93,7 @@ export const SkeletonSearchItem = () => {
 
   const opacity = shimmerAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.3, 0.7],
+    outputRange: [0.2, 0.9],
   });
 
   return (
@@ -119,12 +119,12 @@ export const SkeletonCategoryCard = () => {
       Animated.sequence([
         Animated.timing(shimmerAnim, {
           toValue: 1,
-          duration: 1000,
+          duration: 600,
           useNativeDriver: true,
         }),
         Animated.timing(shimmerAnim, {
           toValue: 0,
-          duration: 1000,
+          duration: 600,
           useNativeDriver: true,
         }),
       ])
@@ -135,7 +135,7 @@ export const SkeletonCategoryCard = () => {
 
   const opacity = shimmerAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.3, 0.7],
+    outputRange: [0.2, 0.9],
   });
 
   return (
@@ -157,12 +157,12 @@ export const SkeletonCompanyCard = () => {
       Animated.sequence([
         Animated.timing(shimmerAnim, {
           toValue: 1,
-          duration: 1000,
+          duration: 600,
           useNativeDriver: true,
         }),
         Animated.timing(shimmerAnim, {
           toValue: 0,
-          duration: 1000,
+          duration: 600,
           useNativeDriver: true,
         }),
       ])
@@ -173,7 +173,7 @@ export const SkeletonCompanyCard = () => {
 
   const opacity = shimmerAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.3, 0.7],
+    outputRange: [0.2, 0.9],
   });
 
   return (
@@ -196,12 +196,12 @@ export const SkeletonStatCardRow = () => {
       Animated.sequence([
         Animated.timing(shimmerAnim, {
           toValue: 1,
-          duration: 1000,
+          duration: 600,
           useNativeDriver: true,
         }),
         Animated.timing(shimmerAnim, {
           toValue: 0,
-          duration: 1000,
+          duration: 600,
           useNativeDriver: true,
         }),
       ])
@@ -212,7 +212,7 @@ export const SkeletonStatCardRow = () => {
 
   const opacity = shimmerAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.3, 0.7],
+    outputRange: [0.2, 0.9],
   });
 
   return (
@@ -239,12 +239,12 @@ export const SkeletonInventoryItem = () => {
       Animated.sequence([
         Animated.timing(shimmerAnim, {
           toValue: 1,
-          duration: 1000,
+          duration: 600,
           useNativeDriver: true,
         }),
         Animated.timing(shimmerAnim, {
           toValue: 0,
-          duration: 1000,
+          duration: 600,
           useNativeDriver: true,
         }),
       ])
@@ -255,7 +255,7 @@ export const SkeletonInventoryItem = () => {
 
   const opacity = shimmerAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.3, 0.7],
+    outputRange: [0.2, 0.9],
   });
 
   return (

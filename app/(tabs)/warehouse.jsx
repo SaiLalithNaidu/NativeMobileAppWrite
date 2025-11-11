@@ -24,6 +24,7 @@ import {
   View
 } from 'react-native';
 import { db } from '../../lib/firebase';
+import WarehouseSkeleton from '../components/warehouse/WarehouseSkeleton';
 import { SimpleSalesAnalyticsService } from '../services/simpleSalesAnalyticsService';
 import { SalesDataSeeder } from '../utils/salesDataSeeder';
 
@@ -329,12 +330,7 @@ const WarehouseOverview = () => {
   };
 
   if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0080ff" />
-        <Text style={styles.loadingText}>Loading Warehouse Overview...</Text>
-      </View>
-    );
+    return <WarehouseSkeleton />;
   }
 
   return (
