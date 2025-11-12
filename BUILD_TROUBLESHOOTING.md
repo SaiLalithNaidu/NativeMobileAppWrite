@@ -1,519 +1,357 @@
 # Build Troubleshooting Guide
-## Ramesh Aqua Mobile App - EAS Build Issues & Solutions
+## NativeMobile App (Expo Router + React Native)
 
-**Last Updated:** November 12, 2025  
-**Project:** ramesh-aqua-app  
-**EAS Account:** sailalithkona1  
-**Platform:** Android (React Native + Expo)
+This document consolidates all build failures and solutions encountered during development. Use this as a reference when facing similar issues in the future.
 
 ---
 
-## Table of Contents
-1. [Common Build Failures](#common-build-failures)
-2. [npm ci Sync Issues](#npm-ci-sync-issues)
-3. [Package Name Conflicts](#package-name-conflicts)
-4. [Build Queue & Timeouts](#build-queue--timeouts)
-5. [Dependency Version Mismatches](#dependency-version-mismatches)
-6. [Quick Reference Commands](#quick-reference-commands)
-7. [Preventive Maintenance](#preventive-maintenance)
+## 1. AsyncStorage Version Mismatch Error
 
----
-
-## Common Build Failures
-
-### Issue Summary
-Between multiple build attempts, the project experienced:
-- **10+ failed builds** due to npm ci lockfile sync errors
-- **45+ minute queue times** on production profile (free tier)
-- **Package installation failures** from stale cached artifacts
-- **App install conflicts** from mismatched package names
-
----
-
-## npm ci Sync Issues
-
-### Problem
+### Error Message
 ```
 npm error code EUSAGE
-npm error `npm ci` can only install packages when your package.json and package-lock.json 
-or npm-shrinkwrap.json are in sync.
+npm error `npm ci` can only install packages when your package.json and package-lock.json or npm-shrinkwrap.json are in sync.
 npm error Missing: @react-native-async-storage/async-storage@1.24.0 from lock file
 ```
 
 ### Root Cause
-- npm ci is **extremely strict** about lockfile/package.json sync
-- EAS caches project archives; stale lockfiles persist across builds
-- Upgrading dependencies (e.g., AsyncStorage 1.24.0 → 2.2.0) without regenerating lockfile properly
-- Multiple lock files (yarn.lock + package-lock.json) confuse EAS package manager detection
+- Expo SDK 54 requires `@react-native-async-storage/async-storage@2.2.0`
+- Project was initially using `1.24.0`, creating a version mismatch
+- npm ci (clean install) enforces strict lockfile sync and fails when package.json and package-lock.json don't match
 
-### Solution: Switch to Yarn
+### Solution
 
-#### Why Yarn?
-- Yarn is **more forgiving** than npm ci for lockfile inconsistencies
-- EAS detects yarn.lock and uses `yarn install` instead of `npm ci`
-- Avoids strict byte-for-byte sync requirements
-
-#### Steps to Switch:
+**Quick Fix (Recommended):**
+1. Upgrade AsyncStorage in package.json:
 ```powershell
-# 1. Install Yarn globally
-npm install -g yarn
-
-# 2. Remove npm lockfile
-del package-lock.json
-
-# 3. Generate yarn.lock
-yarn install --ignore-scripts
-
-# 4. Commit changes
-git add yarn.lock
-git rm -f package-lock.json
-git commit -m "Switch to Yarn to fix npm ci sync issues"
-git push
-
-# 5. Build with cache cleared
-eas build --platform android --profile preview --clear-cache
+npm install @react-native-async-storage/async-storage@2.2.0 --save-exact
 ```
 
-### Alternative: Fix npm Strictly (Not Recommended)
-If you must stay on npm:
-
+2. Regenerate lockfile:
 ```powershell
-# 1. Clean everything
-rmdir /s /q node_modules
 del package-lock.json
-
-# 2. Regenerate lock deterministically
 npm install --package-lock-only
 npm install
-
-# 3. Verify sync locally
-npm ci  # Should succeed without errors
-
-# 4. Commit and clear cache
-git add package-lock.json
-git commit -m "Regenerate lockfile for npm ci"
-git push
-eas build --platform android --profile preview --clear-cache
 ```
 
-**Important:** Always use `--clear-cache` flag when fixing dependency issues to avoid stale artifacts.
+3. Commit and push:
+```powershell
+git add package-lock.json
+git commit -m "Update AsyncStorage to 2.2.0 for Expo SDK 54"
+git push
+```
+
+4. Clear EAS cache and rebuild:
+```powershell
+eas build --platform android --profile preview --clear-cache --non-interactive
+```
+
+**Alternative (Use Yarn):**
+If npm ci continues to fail, switch to Yarn:
+```powershell
+del package-lock.json
+yarn install
+git add yarn.lock
+git rm -f package-lock.json
+git commit -m "Switch to Yarn to avoid npm ci mismatch"
+git push
+eas build --platform android --profile preview --clear-cache --non-interactive
+```
+
+### Prevention
+- Always use `expo install <package>` for dependencies (Expo automatically finds compatible versions)
+- Keep package.json and lockfiles in sync: `npm install` before `git commit`
+- Use `npx expo-doctor` locally to catch version mismatches early
 
 ---
 
-## Package Name Conflicts
+## 2. Multiple Lock Files Conflict
 
-### Problem
+### Error Message
 ```
-"Package conflicts with an existing package by the same name"
+✖ Check for lock file
+Multiple lock files detected (yarn.lock, package-lock.json). This may result in unexpected behavior in CI environments, such as EAS Build, which infer the package manager from the lock file.
 ```
 
 ### Root Cause
-- Android package name in `app.json` matches an already-installed app
-- Changing project slug doesn't auto-update the package identifier
-- EAS generates new keystore for each unique package name
+- Both yarn.lock and package-lock.json exist in the repo
+- EAS cannot determine which package manager to use, causing unpredictable behavior
+- npm ci may fail if yarn.lock is prioritized over package-lock.json
 
 ### Solution
 
-#### 1. Update Package Name in app.json
+**Choose One Package Manager:**
+
+**Option A: Use npm (recommended for simplicity)**
+```powershell
+del yarn.lock
+git rm -f yarn.lock
+git commit -m "Remove yarn.lock; use npm only"
+git push
+```
+
+**Option B: Use Yarn (recommended if npm ci has issues)**
+```powershell
+del package-lock.json
+git rm -f package-lock.json
+git commit -m "Remove package-lock.json; use Yarn"
+git push
+```
+
+### Verification
+```powershell
+npx expo-doctor
+# Should show 17/17 checks passed with no lock file warning
+```
+
+---
+
+## 3. Build Queue Stuck for 45+ Minutes
+
+### Symptoms
+- Build status shows "in queue" but never progresses to build phase
+- Waiting hours with no update
+- No errors, just idle state
+
+### Root Cause
+- EAS free-tier builds share workers; high demand = long queue times
+- Production profile builds (store distribution) have lower priority
+- Free accounts have no queue priority
+
+### Solution
+
+**Option 1: Use Preview Profile (Faster)**
+```powershell
+eas build --platform android --profile preview --non-interactive
+```
+Preview builds typically take 15-25 minutes total (much faster than production).
+
+**Option 2: Cancel and Restart**
+```powershell
+# Note: EAS doesn't support direct cancellation via CLI for old builds
+# Instead, use the web dashboard: https://expo.dev/accounts/sailalithkona1/projects/ramesh-aqua-app/builds
+# Then restart:
+eas build --platform android --profile preview --clear-cache --non-interactive
+```
+
+**Option 3: Use Existing APK**
+If an earlier build succeeded, use that APK instead of waiting:
+```
+Download APK from: https://expo.dev/accounts/sailalithkona1/projects/ramesh-aqua-app
+```
+
+### Prevention
+- Use preview profile for development testing
+- Use production profile only when submitting to stores
+- Check queue status before starting build: `eas build:list --limit 1`
+
+---
+
+## 4. Android Package Name Install Conflict
+
+### Error Message
+```
+"The app conflicts with an existing package of the same name"
+```
+
+### Root Cause
+- Old APK with package name `com.anonymous.NativeMobile` already installed on device
+- New build uses the same package name, causing conflict
+- Android requires unique package names per app installation
+
+### Solution
+
+**Update Package Name in app.json:**
 ```json
-{
-  "expo": {
-    "android": {
-      "package": "com.sailalith.rameshaqua"  // Must be globally unique
-    }
-  }
+"android": {
+  "package": "com.sailalith.rameshaqua"
 }
 ```
 
-**Naming Convention:**
-- Format: `com.<owner>.<projectname>`
-- Must be unique on the device (no spaces, lowercase)
-- Example: `com.sailalith.rameshaqua`
-
-#### 2. Generate New Keystore
-After changing package name, keystore must be regenerated:
-
-```powershell
-# Run interactive build (not --non-interactive)
-eas build --platform android --profile preview
-
-# When prompted:
-√ Generate a new Android Keystore? ... yes
-```
-
-#### 3. Commit Changes
+**Full Steps:**
+1. Edit `app.json` and change the package name to something unique
+2. Commit and push:
 ```powershell
 git add app.json
-git commit -m "Update Android package name to com.sailalith.rameshaqua"
+git commit -m "Change Android package to com.sailalith.rameshaqua"
 git push
 ```
 
-#### 4. Uninstall Old App (If Needed)
-Before installing new APK with changed package name:
-```bash
-# On device or emulator
-adb uninstall com.anonymous.NativeMobile  # Old package
-```
-
----
-
-## Build Queue & Timeouts
-
-### Problem
-- Build stuck in queue for 45+ minutes
-- No worker allocated (free tier)
-- Build eventually times out or auto-cancels
-
-### Root Cause
-- **Free/Hobby EAS plan** has low priority during peak hours
-- **Production profile** queues slower than preview/development
-- **Store distribution** adds signing overhead
-
-### Solution
-
-#### 1. Use Preview Profile (Faster)
-```json
-// eas.json
-{
-  "build": {
-    "preview": {
-      "distribution": "internal",  // Faster than "store"
-      "channel": "preview"
-    }
-  }
-}
-```
-
-Build command:
+3. Rebuild with new keystore (required for new package):
 ```powershell
 eas build --platform android --profile preview
+# Accept prompt: "Generate a new Android Keystore? ... yes"
 ```
 
-Preview builds typically complete in **15-25 minutes** vs production's 45+ minutes.
-
-#### 2. Cancel Stuck Builds
-```powershell
-# List recent builds
-eas build:list --limit 5
-
-# Cancel stuck build (if ID found)
-eas build:cancel <BUILD_ID>
-```
-
-#### 3. Upgrade EAS Plan (Optional)
-- **Production Plan ($29/mo)**: Priority queue, faster workers
-- **Enterprise Plan**: Dedicated resources
-
-#### 4. Check Build Status
-Monitor builds:
-```powershell
-eas build:list --limit 3
-eas build:view <BUILD_ID>
-```
-
-Build logs URL format:
-```
-https://expo.dev/accounts/sailalithkona1/projects/ramesh-aqua-app/builds/<BUILD_ID>
-```
+### Prevention
+- Use descriptive, unique package names: `com.companyname.appname`
+- Avoid generic names like `com.anonymous.NativeMobile`
+- Check existing installations on device before installing new build
 
 ---
 
-## Dependency Version Mismatches
+## 5. Keystore Generation in Non-Interactive Mode
 
-### Problem
+### Error Message
 ```
-16/17 checks passed. 1 checks failed.
-✖ Check that packages match versions required by installed Expo SDK
-Major version mismatches: @react-native-async-storage/async-storage
+Generating a new Keystore is not supported in --non-interactive mode
+Error: build command failed.
 ```
 
 ### Root Cause
-- Package versions not aligned with Expo SDK version
-- Manual `npm install` of incompatible versions
+- When package name changes, Android keystore must be regenerated
+- `--non-interactive` flag prevents manual approval of keystore generation
+- EAS requires confirmation for security reasons
 
 ### Solution
 
-#### 1. Check Expo SDK Compatibility
+**Use Interactive Mode for First Build with New Package:**
 ```powershell
-npx expo-doctor
+eas build --platform android --profile preview
+# Accept prompt: "Generate a new Android Keystore? ... yes"
 ```
 
-#### 2. Fix with Expo Install
-Always use `expo install` for Expo-managed packages:
+**After First Build, Use Non-Interactive for Subsequent Builds:**
 ```powershell
-npx expo install @react-native-async-storage/async-storage
+eas build --platform android --profile preview --non-interactive
 ```
 
-This ensures the correct version for your SDK.
+### Prevention
+- Use interactive mode when changing package names or credentials
+- Use non-interactive only after initial setup is complete
+- Save the build ID for reference
 
-#### 3. Verify After Fix
-```powershell
-npx expo-doctor
-# Should show: 17/17 checks passed. No issues detected!
+---
+
+## 6. Expo Doctor Errors
+
+### Error 1: "expo module is not installed"
+```
+Cannot determine the project's Expo SDK version because the module `expo` is not installed.
 ```
 
-#### 4. Update Lockfile
-After fixing versions:
+**Solution:**
 ```powershell
-# If using Yarn
-yarn install
-
-# If using npm
 npm install
+npx expo-doctor
+```
 
-# Commit
-git add package.json yarn.lock  # or package-lock.json
-git commit -m "Fix dependency versions for Expo SDK 54"
-git push
+### Error 2: "AsyncStorage mismatch in doctor check"
+```
+Check that packages match versions required by installed Expo SDK
+Expected: @react-native-async-storage/async-storage 2.2.0, Found: 1.24.0
+```
+
+**Solution:**
+Follow [Section 1: AsyncStorage Version Mismatch](#1-asyncstorage-version-mismatch-error)
+
+### Verification
+```powershell
+npx expo-doctor
+# Should output: 17/17 checks passed. No issues detected!
 ```
 
 ---
 
-## Quick Reference Commands
+## Quick Reference: Common Commands
 
-### Health Checks
+### Check Status
 ```powershell
-# Check project health
-npx expo-doctor
-
-# Verify EAS login
-eas whoami
-
-# Check project info
-eas project:info
-
-# List recent builds
-eas build:list --limit 5
+npx expo-doctor                           # Validate local environment
+eas build:list --limit 1                 # Check latest build
+eas build:view <BUILD_ID>                # View specific build details
+eas whoami                               # Check logged-in account
 ```
 
 ### Build Commands
 ```powershell
-# Standard preview build
-eas build --platform android --profile preview
-
-# Build with cleared cache (after dependency fixes)
-eas build --platform android --profile preview --clear-cache
-
-# Non-interactive (for CI/CD or scripts)
-eas build --platform android --profile preview --non-interactive
+eas build --platform android --profile preview                    # Interactive build
+eas build --platform android --profile preview --non-interactive  # Non-interactive
+eas build --platform android --profile preview --clear-cache      # Clear build cache
 ```
 
-### Troubleshooting
+### Dependency Management
 ```powershell
-# View build logs
-eas build:view <BUILD_ID>
-
-# Check build status
-eas build:list --limit 1
-
-# Cancel stuck build
-eas build:cancel <BUILD_ID>
-
-# Clear local node_modules
-rmdir /s /q node_modules
-npm install  # or yarn install
+npx expo install <package>               # Install Expo-compatible package
+npm install --package-lock-only          # Regenerate lock without node_modules
+yarn install                             # Generate yarn.lock
 ```
 
-### Lock File Management
+### Git Workflow
 ```powershell
-# Switch to Yarn (recommended)
-del package-lock.json
-yarn install
-git add yarn.lock
-git rm -f package-lock.json
-git commit -m "Switch to Yarn"
-
-# Regenerate npm lock (if staying on npm)
-del package-lock.json
-npm install --package-lock-only
-npm install
-git add package-lock.json
-git commit -m "Regenerate npm lockfile"
+git add .
+git commit -m "Descriptive message"
+git push
 ```
-
----
-
-## Preventive Maintenance
-
-### Before Every Build
-
-#### 1. Run Local Health Check
-```powershell
-npx expo-doctor
-```
-Must show: `17/17 checks passed`
-
-#### 2. Verify Lock File
-```powershell
-# If using Yarn
-yarn install
-
-# If using npm
-npm ci  # Should complete without errors
-```
-
-#### 3. Check Git Status
-```powershell
-git status
-# Ensure package.json, lock file, and app.json are committed
-```
-
-#### 4. Commit Before Building
-Never build with uncommitted changes to:
-- `package.json`
-- `yarn.lock` or `package-lock.json`
-- `app.json`
-
-### After Dependency Updates
-
-Always follow this sequence:
-
-1. **Update package.json** (manually or via `expo install`)
-2. **Regenerate lock file** (`yarn install` or `npm install`)
-3. **Run `npx expo-doctor`** to verify compatibility
-4. **Commit changes** to Git
-5. **Push to remote**
-6. **Build with `--clear-cache`** flag
-
-### Monthly Maintenance
-
-```powershell
-# Update Expo SDK and dependencies
-npx expo install --fix
-
-# Check for outdated packages
-yarn outdated  # or npm outdated
-
-# Update non-Expo dependencies carefully
-yarn upgrade-interactive --latest
-```
-
----
-
-## Common Error Messages & Quick Fixes
-
-| Error | Quick Fix |
-|-------|-----------|
-| `npm ci ... not in sync` | Switch to Yarn (see [npm ci section](#npm-ci-sync-issues)) |
-| `Package conflicts` | Update `android.package` in app.json, rebuild |
-| `Build stuck in queue 45+ min` | Cancel build, use preview profile instead |
-| `expo-doctor: 16/17 checks` | Run `npx expo install <package>` for failing package |
-| `Generating keystore not supported in --non-interactive` | Run interactive build: `eas build --platform android --profile preview` |
-| `Multiple lock files detected` | Delete unwanted lock (keep yarn.lock, remove package-lock.json) |
 
 ---
 
 ## Project Configuration Reference
 
-### Current Setup (Working)
-```json
-// app.json
-{
-  "expo": {
-    "name": "Ramesh Aqua",
-    "slug": "ramesh-aqua-app",
-    "version": "1.0.1",
-    "android": {
-      "package": "com.sailalith.rameshaqua"
-    }
-  }
-}
-```
+### Current Project Setup
+- **Project Name:** Ramesh Aqua
+- **Slug:** ramesh-aqua-app
+- **Package Name:** com.sailalith.rameshaqua
+- **EAS Project ID:** ac16db0b-3b84-4a69-9b2c-599e05b7091e
+- **Package Manager:** Yarn (yarn.lock) - DO NOT use npm alongside
+- **Expo SDK:** 54.0.0
+- **Account:** sailalithkona1
 
-```json
-// eas.json
-{
-  "build": {
-    "preview": {
-      "distribution": "internal",
-      "channel": "preview"
-    },
-    "production": {
-      "autoIncrement": true,
-      "channel": "production",
-      "android": {
-        "buildType": "apk"
-      }
-    }
-  }
-}
-```
-
-### Dependencies
-- **Expo SDK:** 54.0.23
-- **React Native:** 0.81.5
-- **React:** 19.1.0
-- **AsyncStorage:** 2.2.0 (critical: must match Expo SDK)
-
-### Package Manager
-- **Using:** Yarn 1.22.22
-- **Why:** More forgiving than npm ci; avoids strict lockfile sync issues
+### Build Profiles
+- **preview:** Internal distribution for testing (fast, ~15-25 min)
+- **production:** Store distribution (slower, requires queue priority)
 
 ---
 
-## Success Checklist
+## Troubleshooting Workflow
 
-Before declaring "build fixed," verify:
+When facing a build issue:
 
-- [ ] `npx expo-doctor` shows 17/17 checks passed
-- [ ] Only one lock file exists (yarn.lock)
-- [ ] `package.json` and `yarn.lock` committed and pushed
-- [ ] Build completes successfully (not stuck in queue)
-- [ ] APK installs on device without "package conflict" error
-- [ ] App launches and core features work
+1. **Run Expo Doctor**
+   ```powershell
+   npx expo-doctor
+   ```
+   - Check all 17 checks pass
+   - Resolve any warnings
+
+2. **Check Recent Commits**
+   ```powershell
+   git log -3 --oneline
+   ```
+   - Ensure latest changes are in place
+
+3. **Verify Dependencies**
+   ```powershell
+   npx expo-doctor
+   ```
+   - AsyncStorage should be 2.2.0
+   - Only one lock file (yarn.lock OR package-lock.json)
+
+4. **Start Clean Build**
+   ```powershell
+   eas build --platform android --profile preview --clear-cache
+   ```
+   - Use `--clear-cache` to prevent stale artifacts
+
+5. **Monitor Build**
+   ```powershell
+   eas build:list --limit 1
+   ```
+   - Check status until completion or failure
+
+6. **Review Logs**
+   - Click the logs URL to view full build output
+   - Search for error keywords from this guide
 
 ---
 
 ## Contact & Resources
 
-### Project Info
-- **EAS Project:** `@sailalithkona1/ramesh-aqua-app`
-- **Project ID:** `ac16db0b-3b84-4a69-9b2c-599e05b7091e`
-- **Repository:** `NativeMobileAppWrite` (branch: NativeMobile1)
-
-### Useful Links
-- [Expo Doctor Docs](https://docs.expo.dev/more/expo-cli/#expo-doctor)
-- [EAS Build Docs](https://docs.expo.dev/build/introduction/)
-- [Dependency Validation](https://expo.fyi/dependency-validation)
-- [Build Logs](https://expo.dev/accounts/sailalithkona1/projects/ramesh-aqua-app/builds)
-
-### Commands to Bookmark
-```powershell
-# Quick health check
-npx expo-doctor
-
-# Quick build (after fixes)
-eas build --platform android --profile preview --clear-cache
-
-# View latest build
-eas build:list --limit 1
-```
+- **Expo Docs:** https://docs.expo.dev/
+- **EAS Build:** https://docs.expo.dev/build/introduction/
+- **Build Status:** https://expo.dev/accounts/sailalithkona1/projects/ramesh-aqua-app/builds
 
 ---
 
-## Troubleshooting Flowchart
-
-```
-Build Failed?
-│
-├─ "npm ci not in sync" error?
-│  └─ YES → Switch to Yarn (del package-lock.json; yarn install; commit; build --clear-cache)
-│
-├─ "Package conflicts" error?
-│  └─ YES → Update android.package in app.json; rebuild interactively to generate keystore
-│
-├─ Stuck in queue 45+ min?
-│  └─ YES → Cancel build; use preview profile instead of production
-│
-├─ "expo-doctor" failing?
-│  └─ YES → Run: npx expo install <failing-package>; verify with expo-doctor; commit; build
-│
-└─ Other error?
-   └─ Check build logs: eas build:view <BUILD_ID>
-      Read error message carefully
-      Search this doc for keywords
-```
-
----
-
-**Remember:** When in doubt, run `npx expo-doctor` first, then build with `--clear-cache` after any dependency/config changes.
+**Last Updated:** November 12, 2025
+**Author:** Build Troubleshooting Documentation
