@@ -17,7 +17,7 @@
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from "react";
-import { FlatList, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { FlatList, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useCart } from '../../contexts/CartContext';
 import { COLORS } from '../../src/utils/constants';
 import { SkeletonProductGrid } from '../components/SkeletonLoader';
@@ -185,7 +185,7 @@ const Search = () => {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#f5f5f5' }}>
+    <ScrollView style={{ flex: 1, backgroundColor: '#f5f5f5' }}>
       <View style={styles.searchContainer}>
         <FontAwesome5 name="search" size={20} color="#999" style={styles.searchIcon} />
         <TextInput 
@@ -222,8 +222,7 @@ const Search = () => {
             keyExtractor={(item, index) => `${item}-${index}`}
             renderItem={renderHistoryItem}
             contentContainerStyle={styles.historyList}
-            scrollEnabled={true}
-            nestedScrollEnabled={true}
+            scrollEnabled={false}
           />
         </View>
       ) : (
@@ -232,8 +231,7 @@ const Search = () => {
           keyExtractor={(item) => item.id}
           numColumns={2}
           columnWrapperStyle={styles.gridRow}
-          scrollEnabled={true}
-          nestedScrollEnabled={true}
+          scrollEnabled={false}
           ListHeaderComponent={() => (
             <View style={styles.headerContainer}>
               <Text style={styles.headerTitle}>
@@ -290,7 +288,7 @@ const Search = () => {
           }
         />
       )}
-    </View>
+    </ScrollView>
   );
 }
 

@@ -15,13 +15,14 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { collection, getDocs, orderBy, query } from 'firebase/firestore';
 import { useCallback, useState } from 'react';
 import {
-    FlatList,
-    RefreshControl,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  FlatList,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { db } from '../../lib/firebase';
@@ -292,7 +293,7 @@ export default function OrdersScreen() {
   const filteredOrders = getFilteredOrders();
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container}>
       {/* Header */}
       {/* <View style={styles.header}>
         <Text style={styles.headerTitle}>Order Management</Text>
@@ -332,8 +333,7 @@ export default function OrdersScreen() {
         renderItem={renderOrderItem}
         contentContainerStyle={styles.listContainer}
         ListEmptyComponent={renderEmptyState}
-        scrollEnabled={true}
-        nestedScrollEnabled={true}
+        scrollEnabled={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -345,7 +345,7 @@ export default function OrdersScreen() {
       />
 
       <Toast />
-    </View>
+    </ScrollView>
   );
 }
 

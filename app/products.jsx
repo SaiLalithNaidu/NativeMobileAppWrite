@@ -1,11 +1,12 @@
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { collection, getDocs, query, where } from 'firebase/firestore';
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     FlatList,
     Image,
+    ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
@@ -297,7 +298,7 @@ const ProductsScreen = () => {
           headerBackTitle: 'Back',
         }} 
       />
-      <View style={styles.container}>
+      <ScrollView style={styles.container}>
         {/* Compact Header */}
         <View style={styles.headerContainer}>
           {companyName && (
@@ -315,8 +316,7 @@ const ProductsScreen = () => {
           numColumns={2}
           columnWrapperStyle={styles.gridRow}
           contentContainerStyle={styles.gridContainer}
-          scrollEnabled={true}
-          nestedScrollEnabled={true}
+          scrollEnabled={false}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <FontAwesome5 name="shopping-bag" size={50} color="#ccc" />
@@ -346,7 +346,7 @@ const ProductsScreen = () => {
             </View>
           </TouchableOpacity>
         )}
-      </View>
+      </ScrollView>
     </>
   );
 };

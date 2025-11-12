@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import {
   FlatList,
   Image,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -175,7 +176,7 @@ const CategoriesScreen = () => {
           headerBackTitle: 'Back',
         }} 
       />
-      <View style={styles.container}>
+      <ScrollView style={styles.container}>
           <LinearGradient
             colors={['#002147', '#004080']}
             style={styles.headerGradient}
@@ -207,8 +208,7 @@ const CategoriesScreen = () => {
           contentContainerStyle={styles.gridContainer}
           renderItem={renderCategoryCard}
           showsVerticalScrollIndicator={false}
-          scrollEnabled={true}
-          nestedScrollEnabled={true}
+          scrollEnabled={false}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
                 <FontAwesome5 name="box-open" size={60} color="#ccc" />
@@ -219,7 +219,7 @@ const CategoriesScreen = () => {
           }
         />
           </View>
-      </View>
+      </ScrollView>
     </>
   );
 };
@@ -273,7 +273,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
     categoriesSection: {
-      flex: 1,
       marginTop: -15,
       backgroundColor: '#f5f5f5',
       borderTopLeftRadius: 20,
