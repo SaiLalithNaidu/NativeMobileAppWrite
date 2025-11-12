@@ -27,7 +27,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.NativeMobile"
+      "package": "com.sailalith.rameshaqua"
     },
     "web": {
       "output": "static",
