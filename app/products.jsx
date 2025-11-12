@@ -315,6 +315,8 @@ const ProductsScreen = () => {
           numColumns={2}
           columnWrapperStyle={styles.gridRow}
           contentContainerStyle={styles.gridContainer}
+          scrollEnabled={true}
+          nestedScrollEnabled={true}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <FontAwesome5 name="shopping-bag" size={50} color="#ccc" />

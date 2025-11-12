@@ -2,14 +2,14 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { collection, getDocs, query, where } from 'firebase/firestore';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
-    FlatList,
-    Image,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  FlatList,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { db } from '../lib/firebase';
 import { SkeletonCategoryCard } from './components/SkeletonLoader';
@@ -206,7 +206,9 @@ const CategoriesScreen = () => {
           columnWrapperStyle={styles.gridRow}
           contentContainerStyle={styles.gridContainer}
           renderItem={renderCategoryCard}
-            showsVerticalScrollIndicator={false}
+          showsVerticalScrollIndicator={false}
+          scrollEnabled={true}
+          nestedScrollEnabled={true}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
                 <FontAwesome5 name="box-open" size={60} color="#ccc" />
@@ -292,7 +294,7 @@ const styles = StyleSheet.create({
   },
   gridContainer: {
       paddingHorizontal: 15,
-    paddingBottom: 20,
+    paddingBottom: 60,
   },
   gridRow: {
     justifyContent: 'space-between',

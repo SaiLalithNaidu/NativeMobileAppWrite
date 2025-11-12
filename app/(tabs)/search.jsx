@@ -16,7 +16,7 @@
 
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { FlatList, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useCart } from '../../contexts/CartContext';
 import { COLORS } from '../../src/utils/constants';
@@ -222,6 +222,8 @@ const Search = () => {
             keyExtractor={(item, index) => `${item}-${index}`}
             renderItem={renderHistoryItem}
             contentContainerStyle={styles.historyList}
+            scrollEnabled={true}
+            nestedScrollEnabled={true}
           />
         </View>
       ) : (
@@ -230,6 +232,8 @@ const Search = () => {
           keyExtractor={(item) => item.id}
           numColumns={2}
           columnWrapperStyle={styles.gridRow}
+          scrollEnabled={true}
+          nestedScrollEnabled={true}
           ListHeaderComponent={() => (
             <View style={styles.headerContainer}>
               <Text style={styles.headerTitle}>
@@ -392,7 +396,7 @@ const styles = StyleSheet.create({
   // Grid specific styles
   gridContainer: {
     paddingHorizontal: 16,
-    paddingBottom: 24,
+    paddingBottom: 60,
   },
   gridRow: {
     justifyContent: 'space-between',
@@ -454,6 +458,7 @@ const styles = StyleSheet.create({
   },
   historyList: {
     paddingHorizontal: 16,
+    paddingBottom: 60,
   },
   historyItem: {
     flexDirection: 'row',

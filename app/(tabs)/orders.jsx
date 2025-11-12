@@ -13,7 +13,7 @@
 import { AntDesign, FontAwesome5 } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { collection, getDocs, orderBy, query } from 'firebase/firestore';
-import React, { useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
     FlatList,
     RefreshControl,
@@ -332,6 +332,8 @@ export default function OrdersScreen() {
         renderItem={renderOrderItem}
         contentContainerStyle={styles.listContainer}
         ListEmptyComponent={renderEmptyState}
+        scrollEnabled={true}
+        nestedScrollEnabled={true}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -432,7 +434,7 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     padding: 16,
-    paddingBottom: 24,
+    paddingBottom: 60,
   },
   orderCard: {
     backgroundColor: 'white',
