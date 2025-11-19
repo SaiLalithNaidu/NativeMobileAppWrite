@@ -1,11 +1,14 @@
 import { FontAwesome5 } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { collection, getDocs } from 'firebase/firestore';
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
+    ActivityIndicator,
     FlatList,
     Image,
+    RefreshControl,
     StyleSheet,
     Text,
     TouchableOpacity,
@@ -20,7 +23,7 @@ import { SkeletonCompanyCard } from '../components/SkeletonLoader';
 // ============================================================================
 
 // Companies List Screen
-const CompaniesScreen = ({ companies, onCompanySelect, getCategoryCount, getProductCount }) => {
+const CompaniesScreen = ({ companies, onCompanySelect, getCategoryCount, getProductCount, refreshing, onRefresh }) => {
   return (
       <View style={styles.companiesListContainer}>
         {/* <View style={styles.sectionHeader}>
@@ -30,6 +33,14 @@ const CompaniesScreen = ({ companies, onCompanySelect, getCategoryCount, getProd
         <FlatList
       data={companies}
       keyExtractor={(item) => item.id}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={['#0080ff']}
+          progressBackgroundColor="#f5f5f5"
+        />
+      }
       renderItem={({ item }) => (
         <TouchableOpacity 
           style={styles.categoryItem}
@@ -104,13 +115,14 @@ const Index = () => {
   const [allCategories, setAllCategories] = useState([]);
   const [allProducts, setAllProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
 
   // ============================================================================
   // DATA FETCHING FUNCTIONS
   // ============================================================================
 
-  const fetchCompanies = async () => {
+  const fetchCompanies = useCallback(async () => {
     try {
       const companiesRef = collection(db, 'companies');
       const snapshot = await getDocs(companiesRef);
@@ -124,9 +136,9 @@ const Index = () => {
       console.error("Error fetching companies:", error);
       throw error;
     }
-  };
+  }, []);
 
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     try {
       const categoriesRef = collection(db, 'categories');
       const snapshot = await getDocs(categoriesRef);
@@ -140,9 +152,9 @@ const Index = () => {
       console.error("Error fetching categories:", error);
       return [];
     }
-  };
+  }, []);
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     try {
       const productsRef = collection(db, 'products');
       const snapshot = await getDocs(productsRef);
@@ -156,40 +168,61 @@ const Index = () => {
       console.error("Error fetching products:", error);
       throw error;
     }
-  };
+  }, []);
 
   // ============================================================================
   // LIFECYCLE EFFECTS
   // ============================================================================
 
+  // Load all data on mount and on manual refresh
+  const loadData = useCallback(async (isRefreshing = false) => {
+    try {
+      if (isRefreshing) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+      
+      const [companiesData, categoriesData, productsData] = await Promise.all([
+        fetchCompanies(),
+        fetchCategories(),
+        fetchProducts()
+      ]);
+      
+      setCompanies(companiesData);
+      setAllCategories(categoriesData);
+      setAllProducts(productsData);
+      setError("");
+
+      if (companiesData.length === 0) {
+        setError("No companies found");
+      }
+    } catch (err) {
+      setError(`Failed to load data: ${err.message}`);
+      console.error(err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [fetchCompanies, fetchCategories, fetchProducts]);
+
   // Load all data on mount
   useEffect(() => {
-    const loadInitialData = async () => {
-      try {
-        setLoading(true);
-        const [companiesData, categoriesData, productsData] = await Promise.all([
-          fetchCompanies(),
-          fetchCategories(),
-          fetchProducts()
-        ]);
-        
-        setCompanies(companiesData);
-        setAllCategories(categoriesData);
-        setAllProducts(productsData);
+    loadData();
+  }, [loadData]);
 
-        if (companiesData.length === 0) {
-          setError("No companies found");
-        }
-      } catch (err) {
-        setError(`Failed to load data: ${err.message}`);
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Refresh data when screen comes into focus (e.g., after company deleted from admin)
+  useFocusEffect(
+    useCallback(() => {
+      console.log('🔄 Home screen focused - Refreshing companies...');
+      loadData();
+    }, [loadData])
+  );
 
-    loadInitialData();
-  }, []);
+  // Handle manual pull-to-refresh
+  const onRefresh = useCallback(() => {
+    loadData(true);
+  }, [loadData]);
 
   // ============================================================================
   // HELPER FUNCTIONS
@@ -296,6 +329,8 @@ const Index = () => {
           onCompanySelect={handleCompanySelect}
           getCategoryCount={getCategoryCount}
           getProductCount={getProductCount}
+          refreshing={refreshing}
+          onRefresh={onRefresh}
         />
       </View>
     </View>

@@ -215,6 +215,8 @@ export default function AdminPanel() {
     }
 
     try {
+      setBtnLoading(true);
+      
       // Only send fields that exist in your Appwrite collection
       const companyData = { 
         name: company.name
@@ -257,6 +259,8 @@ export default function AdminPanel() {
         text1: 'Error',
         text2: err.message || 'Failed to add company',
       });
+    } finally {
+      setBtnLoading(false);
     }
   };
 
@@ -329,6 +333,8 @@ export default function AdminPanel() {
         text1: 'Error',
         text2: err.message || 'Failed to add category',
       });
+    } finally {
+      setBtnLoading(false);
     }
   };
 
@@ -395,6 +401,7 @@ export default function AdminPanel() {
 
       console.log('Creating product with data:', productData);
 
+      setBtnLoading(true);
       const productsRef = collection(db, 'products');
       await addDoc(productsRef, productData);
 
@@ -418,6 +425,8 @@ export default function AdminPanel() {
         text1: 'Error',
         text2: err.message || 'Failed to add product',
       });
+    } finally {
+      setBtnLoading(false);
     }
   };
 
@@ -470,6 +479,7 @@ export default function AdminPanel() {
 
       console.log('Updating product:', editingProductId, productData);
 
+      setBtnLoading(true);
       const productRef = doc(db, 'products', editingProductId);
       await updateDoc(productRef, productData);
 
@@ -490,6 +500,8 @@ export default function AdminPanel() {
         text1: 'Error',
         text2: err.message || 'Failed to update product',
       });
+    } finally {
+      setBtnLoading(false);
     }
   };
 
