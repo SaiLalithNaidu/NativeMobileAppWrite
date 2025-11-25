@@ -3,8 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { addDoc, collection, deleteDoc, doc, getDocs, query, updateDoc, where } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import Toast from 'react-native-toast-message';
+import { ActivityIndicator, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { db } from '../../lib/firebase';
 import AlertCard from '../components/AlertCard';
 
@@ -129,11 +128,7 @@ export default function AdminPanel() {
       setCompanies(companiesData);
     } catch (err) {
       console.error('Error loading companies:', err);
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: 'Failed to load companies',
-      });
+      showAlert('error', 'Error', 'Failed to load companies');
     } finally {
       setLoadingCompanies(false);
     }
@@ -155,21 +150,13 @@ export default function AdminPanel() {
       setCategories(categoriesData);
     } catch (err) {
       console.error('Error loading categories:', err);
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: 'Failed to load categories',
-      });
+      showAlert('error', 'Error', 'Failed to load categories');
     }
   };
 
   const navigateToProducts = () => {
     if (!selectedCompanyId || !selectedCategoryId) {
-      Toast.show({
-        type: 'warning',
-        text1: 'Selection Required',
-        text2: 'Please select both company and category first',
-      });
+      showAlert('error', 'Selection Required', 'Please select both company and category first');
       return;
     }
 
@@ -183,11 +170,7 @@ export default function AdminPanel() {
     const selectedCategoryData = categories.find(cat => cat.id === selectedCategoryId);
 
     if (!selectedCompanyData || !selectedCategoryData) {
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: 'Could not find selected company or category data',
-      });
+      showAlert('error', 'Error', 'Could not find selected company or category data');
       return;
     }
 
@@ -206,11 +189,7 @@ export default function AdminPanel() {
 
   const handleAddCompany = async () => {
     if (!company.name.trim()) {
-      Toast.show({
-        type: 'error',
-        text1: 'Validation Error',
-        text2: 'Company name is required',
-      });
+      showAlert('error', 'Validation Error', 'Company name is required');
       return;
     }
 
@@ -238,14 +217,10 @@ export default function AdminPanel() {
       const companiesRef = collection(db, 'companies');
       await addDoc(companiesRef, companyData);
 
-      Toast.show({
-        type: 'success',
-        text1: 'Success',
-        text2: 'Company added successfully!',
+      showAlert('success', 'Success', 'Company added successfully!', 'Continue', () => {
+        setCompany({ name: '', description: '', logoUrl: '', websiteUrl: '' });
+        loadCompanies();
       });
-
-      setCompany({ name: '', description: '', logoUrl: '', websiteUrl: '' });
-      loadCompanies();
     } catch (err) {
       console.error('Full error:', err);
       console.error('Error details:', {
@@ -254,11 +229,7 @@ export default function AdminPanel() {
         type: err.type,
         response: err.response
       });
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: err.message || 'Failed to add company',
-      });
+      showAlert('error', 'Error', err.message || 'Failed to add company');
     } finally {
       setBtnLoading(false);
     }
@@ -266,20 +237,12 @@ export default function AdminPanel() {
 
   const handleAddCategory = async () => {
     if (!selectedCompanyId) {
-      Toast.show({
-        type: 'error',
-        text1: 'Validation Error',
-        text2: 'Please select a company first',
-      });
+      showAlert('error', 'Validation Error', 'Please select a company first');
       return;
     }
 
     if (!category.title.trim()) {
-      Toast.show({
-        type: 'error',
-        text1: 'Validation Error',
-        text2: 'Category title is required',
-      });
+      showAlert('error', 'Validation Error', 'Category title is required');
       return;
     }
 
@@ -311,15 +274,10 @@ export default function AdminPanel() {
       const categoriesRef = collection(db, 'categories');
       await addDoc(categoriesRef, categoryData);
 
-      Toast.show({
-        type: 'success',
-        text1: 'Success',
-        text2: 'Category added successfully!',
+      showAlert('success', 'Success', 'Category added successfully!', 'Continue', () => {
+        setCategory({ title: '', description: '', imageUrl: '', url: '', productsCount: '' });
+        loadCategories(selectedCompanyId);
       });
-      setBtnLoading(false);
-
-      setCategory({ title: '', description: '', imageUrl: '', url: '', productsCount: '' });
-      loadCategories(selectedCompanyId);
     } catch (err) {
       console.error('Full error:', err);
       console.error('Error details:', {
@@ -328,11 +286,7 @@ export default function AdminPanel() {
         type: err.type,
         response: err.response
       });
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: err.message || 'Failed to add category',
-      });
+      showAlert('error', 'Error', err.message || 'Failed to add category');
     } finally {
       setBtnLoading(false);
     }
@@ -340,38 +294,22 @@ export default function AdminPanel() {
 
   const handleAddProduct = async () => {
     if (!selectedCompanyId) {
-      Toast.show({
-        type: 'error',
-        text1: 'Validation Error',
-        text2: 'Please select a company first',
-      });
+      showAlert('error', 'Validation Error', 'Please select a company first');
       return;
     }
 
     if (!selectedCategoryId) {
-      Toast.show({
-        type: 'error',
-        text1: 'Validation Error',
-        text2: 'Please select a category first',
-      });
+      showAlert('error', 'Validation Error', 'Please select a category first');
       return;
     }
 
     if (!product.title.trim()) {
-      Toast.show({
-        type: 'error',
-        text1: 'Validation Error',
-        text2: 'Product title is required',
-      });
+      showAlert('error', 'Validation Error', 'Product title is required');
       return;
     }
 
     if (!product.price.trim()) {
-      Toast.show({
-        type: 'error',
-        text1: 'Validation Error',
-        text2: 'Product price is required',
-      });
+      showAlert('error', 'Validation Error', 'Product price is required');
       return;
     }
 
@@ -405,13 +343,9 @@ export default function AdminPanel() {
       const productsRef = collection(db, 'products');
       await addDoc(productsRef, productData);
 
-      Toast.show({
-        type: 'success',
-        text1: 'Success',
-        text2: 'Product added successfully!',
+      showAlert('success', 'Success', 'Product added successfully!', 'Continue', () => {
+        setProduct({ title: '', description: '', imageUrl: '', url: '', price: '', originalPrice: '' });
       });
-
-      setProduct({ title: '', description: '', imageUrl: '', url: '', price: '', originalPrice: '' });
     } catch (err) {
       console.error('Full error:', err);
       console.error('Error details:', {
@@ -420,11 +354,7 @@ export default function AdminPanel() {
         type: err.type,
         response: err.response
       });
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: err.message || 'Failed to add product',
-      });
+      showAlert('error', 'Error', err.message || 'Failed to add product');
     } finally {
       setBtnLoading(false);
     }
@@ -432,29 +362,17 @@ export default function AdminPanel() {
 
   const handleUpdateProduct = async () => {
     if (!editingProductId) {
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: 'No product selected for editing',
-      });
+      showAlert('error', 'Error', 'No product selected for editing');
       return;
     }
 
     if (!product.title.trim()) {
-      Toast.show({
-        type: 'error',
-        text1: 'Validation Error',
-        text2: 'Product title is required',
-      });
+      showAlert('error', 'Validation Error', 'Product title is required');
       return;
     }
 
     if (!product.price.trim()) {
-      Toast.show({
-        type: 'error',
-        text1: 'Validation Error',
-        text2: 'Product price is required',
-      });
+      showAlert('error', 'Validation Error', 'Product price is required');
       return;
     }
 
@@ -483,23 +401,15 @@ export default function AdminPanel() {
       const productRef = doc(db, 'products', editingProductId);
       await updateDoc(productRef, productData);
 
-      Toast.show({
-        type: 'success',
-        text1: 'Success',
-        text2: 'Product updated successfully!',
+      showAlert('success', 'Success', 'Product updated successfully!', 'Continue', () => {
+        // Reset form and edit mode
+        setProduct({ title: '', description: '', imageUrl: '', url: '', price: '', originalPrice: '' });
+        setIsEditMode(false);
+        setEditingProductId(null);
       });
-
-      // Reset form and edit mode
-      setProduct({ title: '', description: '', imageUrl: '', url: '', price: '', originalPrice: '' });
-      setIsEditMode(false);
-      setEditingProductId(null);
     } catch (err) {
       console.error('Error updating product:', err);
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: err.message || 'Failed to update product',
-      });
+      showAlert('error', 'Error', err.message || 'Failed to update product');
     } finally {
       setBtnLoading(false);
     }
@@ -517,125 +427,87 @@ export default function AdminPanel() {
       originalPrice: productData.originalPrice?.toString() || '',
     });
     // Scroll to product form
-    Toast.show({
-      type: 'info',
-      text1: 'Edit Mode',
-      text2: 'Update product details below',
-    });
+    showAlert('success', 'Edit Mode', 'Update product details below');
   };
 
   const handleCancelEdit = () => {
     setIsEditMode(false);
     setEditingProductId(null);
     setProduct({ title: '', description: '', imageUrl: '', url: '', price: '', originalPrice: '' });
-    Toast.show({
-      type: 'info',
-      text1: 'Cancelled',
-      text2: 'Edit mode cancelled',
-    });
+    showAlert('success', 'Cancelled', 'Edit mode cancelled');
   };
 
   // Delete functions
   const handleDeleteCompany = async (companyId, companyName) => {
-    Alert.alert(
-      'Delete Company',
-      `Are you sure you want to delete "${companyName}"? This will also delete all associated categories and products.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              // Delete company
-              await deleteDoc(doc(db, 'companies', companyId));
+    showAlert('error', 'Delete Company', `Are you sure you want to delete "${companyName}"? This will also delete all associated categories and products.`, 'Delete', async () => {
+      try {
+        // Delete company
+        await deleteDoc(doc(db, 'companies', companyId));
 
-              // Delete all categories for this company
-              const companyIdentifier = companyId;
-              const categoriesSnapshot = await getDocs(
-                query(collection(db, 'categories'), where('companyId', '==', companyIdentifier))
-              );
-              const deleteCategories = categoriesSnapshot.docs.map(docSnap =>
-                deleteDoc(doc(db, 'categories', docSnap.id))
-              );
+        // Delete all categories for this company
+        const companyIdentifier = companyId;
+        const categoriesSnapshot = await getDocs(
+          query(collection(db, 'categories'), where('companyId', '==', companyIdentifier))
+        );
+        const deleteCategories = categoriesSnapshot.docs.map(docSnap =>
+          deleteDoc(doc(db, 'categories', docSnap.id))
+        );
 
-              // Delete all products for this company
-              const productsSnapshot = await getDocs(
-                query(collection(db, 'products'), where('companyId', '==', companyIdentifier))
-              );
-              const deleteProducts = productsSnapshot.docs.map(docSnap =>
-                deleteDoc(doc(db, 'products', docSnap.id))
-              );
+        // Delete all products for this company
+        const productsSnapshot = await getDocs(
+          query(collection(db, 'products'), where('companyId', '==', companyIdentifier))
+        );
+        const deleteProducts = productsSnapshot.docs.map(docSnap =>
+          deleteDoc(doc(db, 'products', docSnap.id))
+        );
 
-              await Promise.all([...deleteCategories, ...deleteProducts]);
+        await Promise.all([...deleteCategories, ...deleteProducts]);
 
-              Toast.show({
-                type: 'success',
-                text1: 'Success',
-                text2: 'Company and all related data deleted!',
-              });
-
-              loadCompanies();
-              if (selectedCompanyId === companyIdentifier) {
-                setSelectedCompanyId(null);
-                setSelectedCompanyName('');
-                setCategories([]);
-              }
-            } catch (err) {
-              console.error('Error deleting company:', err);
-              Toast.show({
-                type: 'error',
-                text1: 'Error',
-                text2: err.message || 'Failed to delete company',
-              });
-            }
-          },
-        },
-      ]
-    );
+        showAlert('success', 'Success', 'Company and all related data deleted!', 'Continue', () => {
+          loadCompanies();
+          if (selectedCompanyId === companyIdentifier) {
+            setSelectedCompanyId(null);
+            setSelectedCompanyName('');
+            setCategories([]);
+          }
+        });
+      } catch (err) {
+        console.error('Error deleting company:', err);
+        showAlert('error', 'Error', err.message || 'Failed to delete company');
+      }
+    });
   };
 
   const handleDeleteCategory = async (categoryId, categoryTitle) => {
-    Alert.alert(
-      'Delete Category',
-      `Are you sure you want to delete "${categoryTitle}"? This will also delete all products in this category.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              // Delete category
-              await deleteDoc(doc(db, 'categories', categoryId));
+    showAlert('error', 'Delete Category', `Are you sure you want to delete "${categoryTitle}"? This will also delete all products in this category.`, 'Delete', async () => {
+      try {
+        // Delete category
+        await deleteDoc(doc(db, 'categories', categoryId));
 
-              // Delete all products in this category
-              const productsSnapshot = await getDocs(
-                query(collection(db, 'products'), where('categoryId', '==', categoryId))
-              );
-              const deleteProducts = productsSnapshot.docs.map(docSnap =>
-                deleteDoc(doc(db, 'products', docSnap.id))
-              );
-              await Promise.all(deleteProducts);
+        // Delete all products in this category
+        const productsSnapshot = await getDocs(
+          query(collection(db, 'products'), where('categoryId', '==', categoryId))
+        );
+        const deleteProducts = productsSnapshot.docs.map(docSnap =>
+          deleteDoc(doc(db, 'products', docSnap.id))
+        );
+        await Promise.all(deleteProducts);
 
-              // Use custom AlertCard for success feedback
-              showAlert('success', 'Success', 'Category and all products deleted!');
-
-              if (selectedCompanyId) {
-                loadCategories(selectedCompanyId);
-              }
-              if (selectedCategoryId === categoryId) {
-                setSelectedCategoryId(null);
-                setSelectedCategoryName('');
-              }
-            } catch (err) {
-              // Use custom AlertCard for error feedback
-              showAlert('error', 'Error', err.message || 'Failed to delete category');
-            }
-          },
-        },
-      ]
-    );
+        // Use custom AlertCard for success feedback
+        showAlert('success', 'Success', 'Category and all products deleted!', 'Continue', () => {
+          if (selectedCompanyId) {
+            loadCategories(selectedCompanyId);
+          }
+          if (selectedCategoryId === categoryId) {
+            setSelectedCategoryId(null);
+            setSelectedCategoryName('');
+          }
+        });
+      } catch (err) {
+        // Use custom AlertCard for error feedback
+        showAlert('error', 'Error', err.message || 'Failed to delete category');
+      }
+    });
   };
 
   // Note: Product deletions are handled within the Admin Products screen
@@ -1018,8 +890,6 @@ export default function AdminPanel() {
           )}
         </View>
       </ScrollView>
-
-      <Toast />
 
       {/* Company Selection Modal */}
       <Modal

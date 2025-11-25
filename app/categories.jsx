@@ -4,20 +4,24 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import {
-  FlatList,
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    FlatList,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+    SafeAreaView
 } from 'react-native';
+import { useCart } from '../contexts/CartContext';
 import { db } from '../lib/firebase';
+import { COLORS } from '../src/utils/constants';
 import { SkeletonCategoryCard } from './components/SkeletonLoader';
 
 const CategoriesScreen = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const { getTotalItems, getTotal } = useCart();
   
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -176,55 +180,81 @@ const CategoriesScreen = () => {
           headerBackTitle: 'Back',
         }} 
       />
-      <ScrollView style={styles.container}>
-          <LinearGradient
-            colors={['#002147', '#004080']}
-            style={styles.headerGradient}
-          >
-            <View style={styles.headerContent}>
-              <View style={styles.companyIconContainer}>
-                <FontAwesome5 name="folder-open" size={24} color="white" />
+      <View style={styles.screenContainer}>
+        <ScrollView style={styles.container}>
+            <LinearGradient
+              colors={['#002147', '#004080']}
+              style={styles.headerGradient}
+            >
+              <View style={styles.headerContent}>
+                <View style={styles.companyIconContainer}>
+                  <FontAwesome5 name="folder-open" size={24} color="white" />
+                </View>
+                <Text style={styles.headerTitle}>
+                  {company?.name || 'Categories'}
+                </Text>
+                <Text style={styles.headerSubtitle}>
+                  {categories.length} {categories.length === 1 ? 'category' : 'categories'} available
+                </Text>
               </View>
-              <Text style={styles.headerTitle}>
-                {company?.name || 'Categories'}
-              </Text>
-              <Text style={styles.headerSubtitle}>
-                {categories.length} {categories.length === 1 ? 'category' : 'categories'} available
-              </Text>
-            </View>
-          </LinearGradient>
+            </LinearGradient>
 
-          <View style={styles.categoriesSection}>
-            <View style={styles.sectionHeader}>
-              <FontAwesome5 name="th-large" size={16} color="#002147" />
-              <Text style={styles.sectionTitle}>Browse Categories</Text>
-            </View>
+            <View style={styles.categoriesSection}>
+              <View style={styles.sectionHeader}>
+                <FontAwesome5 name="th-large" size={16} color="#002147" />
+                <Text style={styles.sectionTitle}>Browse Categories</Text>
+              </View>
 
-        <FlatList
-          data={categories}
-          keyExtractor={(item) => item.id}
-          numColumns={2}
-          columnWrapperStyle={styles.gridRow}
-          contentContainerStyle={styles.gridContainer}
-          renderItem={renderCategoryCard}
-          showsVerticalScrollIndicator={false}
-          scrollEnabled={false}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-                <FontAwesome5 name="box-open" size={60} color="#ccc" />
-              <Text style={styles.emptyText}>
-                No categories found for this company
-              </Text>
+          <FlatList
+            data={categories}
+            keyExtractor={(item) => item.id}
+            numColumns={2}
+            columnWrapperStyle={styles.gridRow}
+            contentContainerStyle={styles.gridContainer}
+            renderItem={renderCategoryCard}
+            showsVerticalScrollIndicator={false}
+            scrollEnabled={false}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                  <FontAwesome5 name="box-open" size={60} color="#ccc" />
+                <Text style={styles.emptyText}>
+                  No categories found for this company
+                </Text>
+              </View>
+            }
+          />
             </View>
-          }
-        />
-          </View>
-      </ScrollView>
+        </ScrollView>
+
+        {/* Floating View Cart Button - Outside ScrollView */}
+        {getTotalItems() > 0 && (
+          <TouchableOpacity 
+            style={styles.viewCartButton}
+            onPress={() => router.push('/(tabs)/cart')}
+            activeOpacity={0.9}
+          >
+            <View style={styles.cartButtonLeft}>
+              <View style={styles.cartItemBadge}>
+                <Text style={styles.cartItemBadgeText}>{getTotalItems()}</Text>
+              </View>
+              <Text style={styles.viewCartText}>View Cart</Text>
+            </View>
+            <View style={styles.cartButtonRight}>
+              <Text style={styles.cartTotalText}>₹{getTotal().toFixed(2)}</Text>
+              <FontAwesome5 name="arrow-right" size={16} color="white" />
+            </View>
+          </TouchableOpacity>
+        )}
+      </View>
     </>
   );
 };
 
 const styles = StyleSheet.create({
+  screenContainer: {
+    flex: 1,
+    position: 'relative',
+  },
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
@@ -380,12 +410,64 @@ const styles = StyleSheet.create({
       paddingHorizontal: 40,
   },
   emptyText: {
-      color: '#999',
+    color: '#999',
     fontSize: 16,
     textAlign: 'center',
       marginTop: 16,
       lineHeight: 24,
   },
-});
-
-export default CategoriesScreen;
+  
+  // Floating View Cart Button
+  viewCartButton: {
+    position: 'absolute',
+    bottom: 20,
+    left: 16,
+    right: 16,
+    zIndex: 99,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: COLORS.PRIMARY,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  cartButtonLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  cartItemBadge: {
+    backgroundColor: 'white',
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cartItemBadgeText: {
+    color: COLORS.PRIMARY,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  viewCartText: {
+    color: 'white',
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  cartButtonRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  cartTotalText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+});export default CategoriesScreen;

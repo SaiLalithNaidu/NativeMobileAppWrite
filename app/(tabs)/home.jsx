@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
+import { useAuth } from '../../contexts/AuthContext';
 import { db } from '../../lib/firebase';
 import ImageCarousel from '../components/imageCarousel';
 import { SkeletonCompanyCard } from '../components/SkeletonLoader';
@@ -108,6 +109,19 @@ const CompaniesScreen = ({ companies, onCompanySelect, getCategoryCount, getProd
 
 const Index = () => {
   const router = useRouter();
+  const { user } = useAuth();
+  
+  // Get greeting based on time of day
+  const getGreeting = useCallback(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return '🌅 Good Morning';
+    if (hour < 17) return '☀️ Good Afternoon';
+    return '🌙 Good Evening';
+  }, []);
+  
+  const getUserName = useCallback(() => {
+    return user?.displayName?.split(' ')[0] || 'Guest';
+  }, [user]);
   
   // State Management
   const [companies, setCompanies] = useState([]);
@@ -269,9 +283,9 @@ const Index = () => {
         >
           <View style={styles.headerContent}>
             <View style={styles.welcomeContainer}>
-              <Text style={styles.welcomeText}>Welcome to</Text>
-              <Text style={styles.brandText}>Ramesh Aqua</Text>
-              <Text style={styles.taglineText}>🦐 Feeds & Needs</Text>
+              <Text style={styles.greetingText}>{getGreeting()}</Text>
+              <Text style={styles.userNameText}>{getUserName()}</Text>
+              <Text style={styles.taglineText}>Browse our exclusive aquatic collection</Text>
             </View>
           </View>
         </LinearGradient>
@@ -311,9 +325,9 @@ const Index = () => {
         >
           <View style={styles.headerContent}>
             <View style={styles.welcomeContainer}>
-              <Text style={styles.welcomeText}>Welcome to</Text>
-              <Text style={styles.brandText}>Ramesh Aqua</Text>
-              <Text style={styles.taglineText}>🦐 Feeds & Needs</Text>
+              <Text style={styles.greetingText}>{getGreeting()}</Text>
+              <Text style={styles.userNameText}>{getUserName()}</Text>
+              <Text style={styles.taglineText}>Browse our exclusive aquatic collection</Text>
             </View>
           </View>
         </LinearGradient>
@@ -359,24 +373,27 @@ const styles = StyleSheet.create({
     welcomeContainer: {
       alignItems: 'center',
     },
-    welcomeText: {
-      fontSize: 16,
+    greetingText: {
+      fontSize: 18,
       color: '#b3d9ff',
-      fontWeight: '500',
+      fontWeight: '600',
+      letterSpacing: 0.5,
     },
-    brandText: {
+    userNameText: {
       fontSize: 32,
       fontWeight: 'bold',
       color: 'white',
-      marginTop: 4,
+      marginTop: 8,
       textShadowColor: 'rgba(0, 0, 0, 0.3)',
       textShadowOffset: { width: 1, height: 1 },
       textShadowRadius: 3,
     },
     taglineText: {
-      fontSize: 14,
+      fontSize: 13,
       color: '#b3d9ff',
-      marginTop: 4,
+      marginTop: 12,
+      fontWeight: '500',
+      lineHeight: 18,
     },
   contentContainer: {
     flex: 1,
