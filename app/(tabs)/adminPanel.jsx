@@ -4,11 +4,13 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { addDoc, collection, deleteDoc, doc, getDocs, query, updateDoc, where } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useTheme } from '../../contexts/ThemeContext';
 import { db } from '../../lib/firebase';
 import AlertCard from '../components/AlertCard';
 
 export default function AdminPanel() {
   const router = useRouter();
+  const { theme } = useTheme();
   const params = useLocalSearchParams();
   const [companies, setCompanies] = useState([]);
   const [loadingCompanies, setLoadingCompanies] = useState(true);
@@ -95,7 +97,7 @@ export default function AdminPanel() {
       try {
         const productData = JSON.parse(params.editProduct);
         handleEditProduct(productData);
-        
+
         // Set company and category if provided
         if (params.companyId) {
           setSelectedCompanyId(params.companyId);
@@ -114,16 +116,16 @@ export default function AdminPanel() {
       setLoadingCompanies(true);
       const companiesRef = collection(db, 'companies');
       const snapshot = await getDocs(companiesRef);
-      
+
       const companiesData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
-      
-      console.log('Companies loaded:', companiesData.map(c => ({ 
-        name: c.name, 
-        id: c.id, 
-        companyId: c.companyId 
+
+      console.log('Companies loaded:', companiesData.map(c => ({
+        name: c.name,
+        id: c.id,
+        companyId: c.companyId
       })));
       setCompanies(companiesData);
     } catch (err) {
@@ -139,12 +141,12 @@ export default function AdminPanel() {
       const categoriesRef = collection(db, 'categories');
       const q = query(categoriesRef, where('companyId', '==', companyIdentifier));
       const snapshot = await getDocs(q);
-      
+
       const categoriesData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
-      
+
       console.log('Filtered categories count:', categoriesData.length);
       console.log('Filtered categories:', categoriesData.map(c => ({ title: c.title, companyId: c.companyId })));
       setCategories(categoriesData);
@@ -195,12 +197,12 @@ export default function AdminPanel() {
 
     try {
       setBtnLoading(true);
-      
+
       // Only send fields that exist in your Appwrite collection
-      const companyData = { 
+      const companyData = {
         name: company.name
       };
-      
+
       // Add optional fields only if they have values
       if (company.description && company.description.trim()) {
         companyData.description = company.description;
@@ -249,11 +251,11 @@ export default function AdminPanel() {
     try {
       // Only send fields that exist in your Appwrite collection
       // Use companyId (camelCase) as shown in Appwrite screenshot
-      const categoryData = { 
+      const categoryData = {
         title: category.title,
-        companyId: selectedCompanyId 
+        companyId: selectedCompanyId
       };
-      
+
       // Add optional fields only if they have values
       if (category.description && category.description.trim()) {
         categoryData.description = category.description;
@@ -322,7 +324,7 @@ export default function AdminPanel() {
         companyId: selectedCompanyId,
         price: parseInt(product.price) || 0,
       };
-      
+
       // Add optional fields only if they have values
       if (product.description && product.description.trim()) {
         productData.description = product.description;
@@ -381,7 +383,7 @@ export default function AdminPanel() {
         title: product.title,
         price: parseInt(product.price) || 0,
       };
-      
+
       if (product.description && product.description.trim()) {
         productData.description = product.description;
       }
@@ -513,24 +515,24 @@ export default function AdminPanel() {
   // Note: Product deletions are handled within the Admin Products screen
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Header */}
       <LinearGradient
-        colors={['#667eea', '#764ba2']}
+        colors={[theme.primary, theme.primaryDark]}
         style={styles.header}
       >
         <View style={styles.headerContent}>
           <View style={styles.headerInfo}>
-            <Text style={styles.headerTitle}>Admin Panel</Text>
-            <Text style={styles.headerSubtitle}>Manage companies, categories & products</Text>
+            <Text style={[styles.headerTitle, { color: '#fff' }]}>Admin Panel</Text>
+            <Text style={[styles.headerSubtitle, { color: 'rgba(255,255,255,0.8)' }]}>Manage companies, categories & products</Text>
           </View>
         </View>
       </LinearGradient>
 
       {/* View Products Button - Top Right */}
       {selectedCompanyId && selectedCategoryId && (
-        <TouchableOpacity 
-          style={styles.viewProductsButton}
+        <TouchableOpacity
+          style={[styles.viewProductsButton, { backgroundColor: theme.primary }]}
           onPress={navigateToProducts}
         >
           <AntDesign name="eye" size={20} color="white" />
@@ -538,63 +540,67 @@ export default function AdminPanel() {
         </TouchableOpacity>
       )}
 
-      <ScrollView 
+      <ScrollView
         style={styles.content}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
         {/* Step 1: Add Company */}
-        <View style={styles.stepContainer}>
+        <View style={[styles.stepContainer, { backgroundColor: theme.cardBackground }]}>
           <View style={styles.stepHeader}>
-            <FontAwesome5 name="building" size={16} color="#667eea" />
-            <Text style={styles.stepTitle}>Step 1: Add Company</Text>
+            <FontAwesome5 name="building" size={16} color={theme.primary} />
+            <Text style={[styles.stepTitle, { color: theme.text }]}>Step 1: Add Company</Text>
           </View>
-          
+
           <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Company Name *</Text>
+            <Text style={[styles.inputLabel, { color: theme.text }]}>Company Name *</Text>
             <TextInput
-              style={styles.textInput}
+              style={[styles.textInput, { color: theme.text, backgroundColor: theme.inputBackground, borderColor: theme.border }]}
               value={company.name}
               onChangeText={(t) => setCompany({ ...company, name: t })}
               placeholder="Enter company name"
+              placeholderTextColor={theme.textLight}
             />
           </View>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Description</Text>
+            <Text style={[styles.inputLabel, { color: theme.text }]}>Description</Text>
             <TextInput
-              style={[styles.textInput, styles.multilineInput]}
+              style={[styles.textInput, styles.multilineInput, { color: theme.text, backgroundColor: theme.inputBackground, borderColor: theme.border }]}
               value={company.description}
               onChangeText={(t) => setCompany({ ...company, description: t })}
               placeholder="Company description"
+              placeholderTextColor={theme.textLight}
               multiline
               numberOfLines={3}
             />
           </View>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Logo URL</Text>
+            <Text style={[styles.inputLabel, { color: theme.text }]}>Logo URL</Text>
             <TextInput
-              style={styles.textInput}
+              style={[styles.textInput, { color: theme.text, backgroundColor: theme.inputBackground, borderColor: theme.border }]}
               value={company.logoUrl}
               onChangeText={(t) => setCompany({ ...company, logoUrl: t })}
               placeholder="Company logo URL"
+              placeholderTextColor={theme.textLight}
             />
           </View>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Website URL</Text>
+            <Text style={[styles.inputLabel, { color: theme.text }]}>Website URL</Text>
             <TextInput
-              style={styles.textInput}
+              style={[styles.textInput, { color: theme.text, backgroundColor: theme.inputBackground, borderColor: theme.border }]}
               value={company.websiteUrl}
               onChangeText={(t) => setCompany({ ...company, websiteUrl: t })}
               placeholder="Company website URL"
+              placeholderTextColor={theme.textLight}
             />
           </View>
 
           <View style={styles.actionButtons}>
-            <TouchableOpacity 
-              style={styles.addButton} 
+            <TouchableOpacity
+              style={[styles.addButton, { backgroundColor: theme.primary }]}
               onPress={handleAddCompany}
               disabled={btnloading}
             >
@@ -611,37 +617,37 @@ export default function AdminPanel() {
 
           {/* Companies List Button */}
           <TouchableOpacity
-            style={styles.listButton}
+            style={[styles.listButton, { borderColor: theme.border }]}
             onPress={() => setShowCompanyList(true)}
           >
-            <FontAwesome5 name="list" size={16} color="#667eea" />
-            <Text style={styles.listButtonText}>
+            <FontAwesome5 name="list" size={16} color={theme.primary} />
+            <Text style={[styles.listButtonText, { color: theme.primary }]}>
               View Companies ({companies.length})
             </Text>
-            <FontAwesome5 name="chevron-right" size={14} color="#667eea" />
+            <FontAwesome5 name="chevron-right" size={14} color={theme.primary} />
           </TouchableOpacity>
         </View>
 
         {/* Step 2: Add Category */}
-        <View style={styles.stepContainer}>
+        <View style={[styles.stepContainer, { backgroundColor: theme.cardBackground }]}>
           <View style={styles.stepHeader}>
-            <FontAwesome5 name="list" size={16} color="#667eea" />
-            <Text style={styles.stepTitle}>Step 2: Add Category</Text>
+            <FontAwesome5 name="list" size={16} color={theme.primary} />
+            <Text style={[styles.stepTitle, { color: theme.text }]}>Step 2: Add Category</Text>
           </View>
 
           {selectedCompanyId ? (
-            <View style={styles.selectedBadge}>
-              <Text style={styles.selectedBadgeText}>
+            <View style={[styles.selectedBadge, { backgroundColor: theme.primary + '20' }]}>
+              <Text style={[styles.selectedBadgeText, { color: theme.primary }]}>
                 Selected Company: {selectedCompanyName}
               </Text>
             </View>
           ) : (
             <TouchableOpacity
-              style={styles.selectionButton}
+              style={[styles.selectionButton, { borderColor: theme.border, backgroundColor: theme.inputBackground }]}
               onPress={() => setShowCompanyModal(true)}
             >
-              <Text style={styles.selectionText}>Select Company First</Text>
-              <FontAwesome5 name="chevron-down" size={16} color="#6b7280" />
+              <Text style={[styles.selectionText, { color: theme.textSecondary }]}>Select Company First</Text>
+              <FontAwesome5 name="chevron-down" size={16} color={theme.textSecondary} />
             </TouchableOpacity>
           )}
 
@@ -701,8 +707,8 @@ export default function AdminPanel() {
               </View>
 
               <View style={styles.actionButtons}>
-                <TouchableOpacity 
-                  style={[styles.addButton, btnloading && styles.disabledButton]} 
+                <TouchableOpacity
+                  style={[styles.addButton, btnloading && styles.disabledButton]}
                   onPress={handleAddCategory}
                   disabled={btnloading}
                 >
@@ -733,17 +739,17 @@ export default function AdminPanel() {
         </View>
 
         {/* Step 3: Add Product */}
-        <View style={styles.stepContainer}>
+        <View style={[styles.stepContainer, { backgroundColor: theme.cardBackground }]}>
           <View style={styles.stepHeader}>
-            <FontAwesome5 name="box" size={16} color="#667eea" />
-            <Text style={styles.stepTitle}>
+            <FontAwesome5 name="box" size={16} color={theme.primary} />
+            <Text style={[styles.stepTitle, { color: theme.text }]}>
               {isEditMode ? 'Edit Product' : 'Step 3: Add Product'}
             </Text>
           </View>
 
           {isEditMode && (
-            <View style={[styles.selectedBadge, { backgroundColor: '#FFF3CD' }]}>
-              <Text style={[styles.selectedBadgeText, { color: '#856404' }]}>
+            <View style={[styles.selectedBadge, { backgroundColor: theme.warning + '20', borderColor: theme.warning }]}>
+              <Text style={[styles.selectedBadgeText, { color: theme.warning }]}>
                 📝 Editing Mode - Update product details below
               </Text>
             </View>
@@ -751,95 +757,125 @@ export default function AdminPanel() {
 
           {!selectedCompanyId ? (
             <TouchableOpacity
-              style={styles.selectionButton}
+              style={[styles.selectionButton, { backgroundColor: theme.inputBackground, borderColor: theme.border }]}
               onPress={() => setShowCompanyModal(true)}
             >
-              <Text style={styles.selectionText}>Select Company First</Text>
-              <FontAwesome5 name="chevron-down" size={16} color="#6b7280" />
+              <Text style={[styles.selectionText, { color: theme.textSecondary }]}>Select Company First</Text>
+              <FontAwesome5 name="chevron-down" size={16} color={theme.textSecondary} />
             </TouchableOpacity>
           ) : !selectedCategoryId ? (
             <View>
-              <View style={styles.selectedBadge}>
-                <Text style={styles.selectedBadgeText}>
+              <View style={[styles.selectedBadge, { backgroundColor: theme.primary + '20', borderColor: theme.primary }]}>
+                <Text style={[styles.selectedBadgeText, { color: theme.primary }]}>
                   Company: {selectedCompanyName}
                 </Text>
               </View>
               <TouchableOpacity
-                style={styles.selectionButton}
+                style={[styles.selectionButton, { backgroundColor: theme.inputBackground, borderColor: theme.border }]}
                 onPress={() => setShowCategoryModal(true)}
               >
-                <Text style={styles.selectionText}>Select Category</Text>
-                <FontAwesome5 name="chevron-down" size={16} color="#6b7280" />
+                <Text style={[styles.selectionText, { color: theme.textSecondary }]}>Select Category</Text>
+                <FontAwesome5 name="chevron-down" size={16} color={theme.textSecondary} />
               </TouchableOpacity>
             </View>
           ) : (
             <>
-              <View style={styles.selectedBadge}>
-                <Text style={styles.selectedBadgeText}>
+              <View style={[styles.selectedBadge, { backgroundColor: theme.primary + '20', borderColor: theme.primary }]}>
+                <Text style={[styles.selectedBadgeText, { color: theme.primary }]}>
                   {selectedCompanyName} → {selectedCategoryName}
                 </Text>
               </View>
 
               <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Product Title *</Text>
+                <Text style={[styles.inputLabel, { color: theme.text }]}>Product Title *</Text>
                 <TextInput
-                  style={styles.textInput}
+                  style={[styles.textInput, { 
+                    color: theme.text, 
+                    backgroundColor: theme.inputBackground, 
+                    borderColor: theme.border 
+                  }]}
                   value={product.title}
                   onChangeText={(t) => setProduct({ ...product, title: t })}
                   placeholder="Enter product title"
+                  placeholderTextColor={theme.textLight}
                 />
               </View>
 
               <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Description</Text>
+                <Text style={[styles.inputLabel, { color: theme.text }]}>Description</Text>
                 <TextInput
-                  style={[styles.textInput, styles.multilineInput]}
+                  style={[styles.textInput, styles.multilineInput, { 
+                    color: theme.text, 
+                    backgroundColor: theme.inputBackground, 
+                    borderColor: theme.border 
+                  }]}
                   value={product.description}
                   onChangeText={(t) => setProduct({ ...product, description: t })}
                   placeholder="Product description"
+                  placeholderTextColor={theme.textLight}
                   multiline
                   numberOfLines={3}
                 />
               </View>
 
               <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Image URL</Text>
+                <Text style={[styles.inputLabel, { color: theme.text }]}>Image URL</Text>
                 <TextInput
-                  style={styles.textInput}
+                  style={[styles.textInput, { 
+                    color: theme.text, 
+                    backgroundColor: theme.inputBackground, 
+                    borderColor: theme.border 
+                  }]}
                   value={product.imageUrl}
                   onChangeText={(t) => setProduct({ ...product, imageUrl: t })}
                   placeholder="Product image URL"
+                  placeholderTextColor={theme.textLight}
                 />
               </View>
 
               <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Product URL</Text>
+                <Text style={[styles.inputLabel, { color: theme.text }]}>Product URL</Text>
                 <TextInput
-                  style={styles.textInput}
+                  style={[styles.textInput, { 
+                    color: theme.text, 
+                    backgroundColor: theme.inputBackground, 
+                    borderColor: theme.border 
+                  }]}
                   value={product.url}
                   onChangeText={(t) => setProduct({ ...product, url: t })}
                   placeholder="Product URL"
+                  placeholderTextColor={theme.textLight}
                 />
               </View>
 
               <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Price *</Text>
+                <Text style={[styles.inputLabel, { color: theme.text }]}>Price *</Text>
                 <TextInput
-                  style={styles.textInput}
+                  style={[styles.textInput, { 
+                    color: theme.text, 
+                    backgroundColor: theme.inputBackground, 
+                    borderColor: theme.border 
+                  }]}
                   value={product.price}
                   onChangeText={(t) => setProduct({ ...product, price: t })}
                   placeholder="Product price"
+                  placeholderTextColor={theme.textLight}
                   keyboardType="numeric"
                 />
               </View>
 
               <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Original Price</Text>
+                <Text style={[styles.inputLabel, { color: theme.text }]}>Original Price</Text>
                 <TextInput
-                  style={styles.textInput}
+                  style={[styles.textInput, { 
+                    color: theme.text, 
+                    backgroundColor: theme.inputBackground, 
+                    borderColor: theme.border 
+                  }]}
                   value={product.originalPrice}
                   onChangeText={(t) => setProduct({ ...product, originalPrice: t })}
                   placeholder="Original price (optional)"
+                  placeholderTextColor={theme.textLight}
                   keyboardType="numeric"
                 />
               </View>
@@ -847,8 +883,8 @@ export default function AdminPanel() {
               <View style={styles.actionButtons}>
                 {isEditMode ? (
                   <>
-                    <TouchableOpacity 
-                      style={[styles.addButton, styles.updateButton]} 
+                    <TouchableOpacity
+                      style={[styles.addButton, styles.updateButton, { backgroundColor: theme.success }]}
                       onPress={handleUpdateProduct}
                       disabled={btnloading}
                     >
@@ -861,17 +897,17 @@ export default function AdminPanel() {
                         </>
                       )}
                     </TouchableOpacity>
-                    <TouchableOpacity 
-                      style={[styles.resetButton, { flex: 1 }]} 
+                    <TouchableOpacity
+                      style={[styles.resetButton, { flex: 1, backgroundColor: theme.inputBackground, borderColor: theme.error }]}
                       onPress={handleCancelEdit}
                     >
-                      <FontAwesome5 name="times" size={16} color="#ef4444" />
-                      <Text style={styles.resetButtonText}>Cancel</Text>
+                      <FontAwesome5 name="times" size={16} color={theme.error} />
+                      <Text style={[styles.resetButtonText, { color: theme.error }]}>Cancel</Text>
                     </TouchableOpacity>
                   </>
                 ) : (
-                  <TouchableOpacity 
-                    style={[styles.addButton, btnloading && styles.disabledButton]} 
+                  <TouchableOpacity
+                    style={[styles.addButton, btnloading && styles.disabledButton, { backgroundColor: theme.primary }]}
                     onPress={handleAddProduct}
                     disabled={btnloading}
                   >
@@ -889,29 +925,30 @@ export default function AdminPanel() {
             </>
           )}
         </View>
-      </ScrollView>
+      </ScrollView >
 
       {/* Company Selection Modal */}
-      <Modal
+      < Modal
         visible={showCompanyModal}
         transparent
         animationType="slide"
-        onRequestClose={() => setShowCompanyModal(false)}
+        onRequestClose={() => setShowCompanyModal(false)
+        }
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Company</Text>
+          <View style={[styles.modalContent, { backgroundColor: theme.cardBackground }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
+              <Text style={[styles.modalTitle, { color: theme.text }]}>Select Company</Text>
               <TouchableOpacity onPress={() => setShowCompanyModal(false)}>
-                <FontAwesome5 name="times" size={20} color="#6b7280" />
+                <FontAwesome5 name="times" size={20} color={theme.textSecondary} />
               </TouchableOpacity>
             </View>
-            
+
             <ScrollView style={styles.modalList}>
               {companies.map((company) => (
                 <TouchableOpacity
                   key={company.id}
-                  style={styles.modalItem}
+                  style={[styles.modalItem, { borderBottomColor: theme.border }]}
                   onPress={() => {
                     const companyIdentifier = company.companyId || company.id;
                     setSelectedCompanyId(companyIdentifier);
@@ -919,82 +956,83 @@ export default function AdminPanel() {
                     setShowCompanyModal(false);
                   }}
                 >
-                  <FontAwesome5 name="building" size={16} color="#667eea" />
-                  <Text style={styles.modalItemText}>{company.name}</Text>
+                  <FontAwesome5 name="building" size={16} color={theme.primary} />
+                  <Text style={[styles.modalItemText, { color: theme.text }]}>{company.name}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
           </View>
         </View>
-      </Modal>
+      </Modal >
 
       {/* Category Selection Modal */}
-      <Modal
+      < Modal
         visible={showCategoryModal}
         transparent
         animationType="slide"
         onRequestClose={() => setShowCategoryModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Category</Text>
+          <View style={[styles.modalContent, { backgroundColor: theme.cardBackground }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
+              <Text style={[styles.modalTitle, { color: theme.text }]}>Select Category</Text>
               <TouchableOpacity onPress={() => setShowCategoryModal(false)}>
-                <FontAwesome5 name="times" size={20} color="#6b7280" />
+                <FontAwesome5 name="times" size={20} color={theme.textSecondary} />
               </TouchableOpacity>
             </View>
-            
+
             <ScrollView style={styles.modalList}>
               {categories.map((category) => (
                 <TouchableOpacity
                   key={category.id}
-                  style={styles.modalItem}
+                  style={[styles.modalItem, { borderBottomColor: theme.border }]}
                   onPress={() => {
                     setSelectedCategoryId(category.id);
                     setSelectedCategoryName(category.title);
                     setShowCategoryModal(false);
                   }}
                 >
-                  <FontAwesome5 name="list" size={16} color="#667eea" />
-                  <Text style={styles.modalItemText}>{category.title}</Text>
+                  <FontAwesome5 name="list" size={16} color={theme.primary} />
+                  <Text style={[styles.modalItemText, { color: theme.text }]}>{category.title}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
           </View>
         </View>
-      </Modal>
+      </Modal >
 
       {/* Company List Modal */}
-      <Modal
+      < Modal
         visible={showCompanyList}
         transparent
         animationType="slide"
         onRequestClose={() => setShowCompanyList(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Existing Companies</Text>
+          <View style={[styles.modalContent, { backgroundColor: theme.cardBackground }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
+              <Text style={[styles.modalTitle, { color: theme.text }]}>Existing Companies</Text>
               <TouchableOpacity onPress={() => setShowCompanyList(false)}>
-                <FontAwesome5 name="times" size={20} color="#6b7280" />
+                <FontAwesome5 name="times" size={20} color={theme.textSecondary} />
               </TouchableOpacity>
             </View>
-            
+
             <ScrollView style={styles.modalList}>
               {loadingCompanies ? (
                 <View style={styles.loadingContainer}>
-                  <ActivityIndicator size="small" color="#667eea" />
-                  <Text style={styles.loadingText}>Loading companies...</Text>
+                  <ActivityIndicator size="small" color={theme.primary} />
+                  <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Loading companies...</Text>
                 </View>
               ) : companies.length === 0 ? (
-                <Text style={styles.emptyText}>No companies yet. Add one above!</Text>
+                <Text style={[styles.emptyText, { color: theme.textSecondary }]}>No companies yet. Add one above!</Text>
               ) : (
                 companies.map((company) => (
                   <View key={company.id} style={styles.listItemContainer}>
                     <TouchableOpacity
                       style={[
                         styles.modalItem,
-                        (selectedCompanyId === (company.companyId || company.id)) && styles.selectedModalItem
+                        (selectedCompanyId === (company.companyId || company.id)) && [styles.selectedModalItem, { backgroundColor: theme.primary + '15' }],
+                        { borderBottomColor: theme.border }
                       ]}
                       onPress={() => {
                         const companyIdentifier = company.companyId || company.id;
@@ -1002,10 +1040,10 @@ export default function AdminPanel() {
                         setSelectedCompanyName(company.name);
                       }}
                     >
-                      <FontAwesome5 name="building" size={16} color="#667eea" />
-                      <Text style={styles.modalItemText}>{company.name}</Text>
+                      <FontAwesome5 name="building" size={16} color={theme.primary} />
+                      <Text style={[styles.modalItemText, { color: theme.text }]}>{company.name}</Text>
                       {(selectedCompanyId === (company.companyId || company.id)) && (
-                        <FontAwesome5 name="check" size={16} color="#667eea" />
+                        <FontAwesome5 name="check" size={16} color={theme.primary} />
                       )}
                     </TouchableOpacity>
                     <TouchableOpacity
@@ -1015,7 +1053,7 @@ export default function AdminPanel() {
                         handleDeleteCompany(company.id, company.name);
                       }}
                     >
-                      <FontAwesome5 name="trash" size={16} color="#ef4444" />
+                      <FontAwesome5 name="trash" size={16} color={theme.error} />
                     </TouchableOpacity>
                   </View>
                 ))
@@ -1023,46 +1061,47 @@ export default function AdminPanel() {
             </ScrollView>
           </View>
         </View>
-      </Modal>
+      </Modal >
 
       {/* Category List Modal */}
-      <Modal
+      < Modal
         visible={showCategoryList}
         transparent
         animationType="slide"
         onRequestClose={() => setShowCategoryList(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
+          <View style={[styles.modalContent, { backgroundColor: theme.cardBackground }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
+              <Text style={[styles.modalTitle, { color: theme.text }]}>
                 Categories - {selectedCompanyName}
               </Text>
               <TouchableOpacity onPress={() => setShowCategoryList(false)}>
-                <FontAwesome5 name="times" size={20} color="#6b7280" />
+                <FontAwesome5 name="times" size={20} color={theme.textSecondary} />
               </TouchableOpacity>
             </View>
-            
+
             <ScrollView style={styles.modalList}>
               {categories.length === 0 ? (
-                <Text style={styles.emptyText}>No categories yet. Add one above!</Text>
+                <Text style={[styles.emptyText, { color: theme.textSecondary }]}>No categories yet. Add one above!</Text>
               ) : (
                 categories.map((category) => (
                   <View key={category.id} style={styles.listItemContainer}>
                     <TouchableOpacity
                       style={[
                         styles.modalItem,
-                        (selectedCategoryId === category.id) && styles.selectedModalItem
+                        (selectedCategoryId === category.id) && [styles.selectedModalItem, { backgroundColor: theme.primary + '15' }],
+                        { borderBottomColor: theme.border }
                       ]}
                       onPress={() => {
                         setSelectedCategoryId(category.id);
                         setSelectedCategoryName(category.title);
                       }}
                     >
-                      <FontAwesome5 name="list" size={16} color="#667eea" />
-                      <Text style={styles.modalItemText}>{category.title}</Text>
+                      <FontAwesome5 name="list" size={16} color={theme.primary} />
+                      <Text style={[styles.modalItemText, { color: theme.text }]}>{category.title}</Text>
                       {(selectedCategoryId === category.id) && (
-                        <FontAwesome5 name="check" size={16} color="#667eea" />
+                        <FontAwesome5 name="check" size={16} color={theme.primary} />
                       )}
                     </TouchableOpacity>
                     <TouchableOpacity
@@ -1072,7 +1111,7 @@ export default function AdminPanel() {
                         handleDeleteCategory(category.id, category.title);
                       }}
                     >
-                      <FontAwesome5 name="trash" size={16} color="#ef4444" />
+                      <FontAwesome5 name="trash" size={16} color={theme.error} />
                     </TouchableOpacity>
                   </View>
                 ))
@@ -1080,28 +1119,29 @@ export default function AdminPanel() {
             </ScrollView>
           </View>
         </View>
-      </Modal>
+      </Modal >
 
       {/* Custom Alert overlay above everything */}
-      {alertVisible && (
-        <View style={styles.alertOverlay}>
-          <AlertCard
-            type={alertData.type}
-            title={alertData.title}
-            message={alertData.message}
-            buttonText={alertData.buttonText}
-            onPress={handleAlertPress}
-          />
-        </View>
-      )}
-    </View>
+      {
+        alertVisible && (
+          <View style={styles.alertOverlay}>
+            <AlertCard
+              type={alertData.type}
+              title={alertData.title}
+              message={alertData.message}
+              buttonText={alertData.buttonText}
+              onPress={handleAlertPress}
+            />
+          </View>
+        )
+      }
+    </View >
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
   },
   header: {
     paddingTop: 20,
@@ -1118,12 +1158,10 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#ffffff',
     marginBottom: 4,
   },
   headerSubtitle: {
     fontSize: 16,
-    color: '#e5e7eb',
     opacity: 0.9,
   },
   content: {
@@ -1132,7 +1170,6 @@ const styles = StyleSheet.create({
     paddingTop: 20,
   },
   stepContainer: {
-    backgroundColor: '#ffffff',
     borderRadius: 12,
     padding: 20,
     marginBottom: 16,
@@ -1150,42 +1187,33 @@ const styles = StyleSheet.create({
   stepTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1f2937',
     marginLeft: 12,
   },
   selectionButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#f9fafb',
     borderWidth: 1,
-    borderColor: '#d1d5db',
     borderRadius: 8,
     padding: 16,
     marginBottom: 16,
   },
   selectedButton: {
-    backgroundColor: '#eff6ff',
-    borderColor: '#667eea',
+    borderWidth: 2,
   },
   selectionText: {
     fontSize: 16,
-    color: '#6b7280',
   },
   selectedText: {
-    color: '#667eea',
     fontWeight: '500',
   },
   selectedBadge: {
-    backgroundColor: '#d4edda',
     padding: 12,
     borderRadius: 8,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#c3e6cb',
   },
   selectedBadgeText: {
-    color: '#155724',
     fontWeight: '600',
     fontSize: 14,
   },
@@ -1195,17 +1223,13 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#1f2937',
     marginBottom: 8,
   },
   textInput: {
-    backgroundColor: '#ffffff',
     borderWidth: 1,
-    borderColor: '#d1d5db',
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    color: '#1f2937',
   },
   multilineInput: {
     height: 80,
@@ -1221,7 +1245,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#667eea',
     borderRadius: 8,
     padding: 16,
     gap: 8,
@@ -1236,15 +1259,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#ffffff',
     borderWidth: 1,
-    borderColor: '#ef4444',
     borderRadius: 8,
     padding: 16,
     gap: 8,
   },
   resetButtonText: {
-    color: '#ef4444',
     fontSize: 16,
     fontWeight: '500',
   },
@@ -1252,25 +1272,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#f0f9ff',
     borderWidth: 1,
-    borderColor: '#bfdbfe',
     borderRadius: 8,
     padding: 14,
     marginTop: 12,
   },
   listButtonText: {
     fontSize: 15,
-    color: '#667eea',
     fontWeight: '500',
     marginLeft: 8,
     flex: 1,
   },
   disabledButton: {
-    backgroundColor: '#9ca3af',
+    opacity: 0.6,
   },
   updateButton: {
-    backgroundColor: '#059669',
+    opacity: 0.8,
   },
   // Modal Styles (Bottom Sheet)
   modalOverlay: {
@@ -1279,7 +1296,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#ffffff',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '70%',
@@ -1291,12 +1307,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1f2937',
   },
   modalList: {
     paddingHorizontal: 20,
@@ -1306,17 +1320,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
     gap: 12,
     flex: 1,
   },
   modalItemText: {
     fontSize: 16,
-    color: '#1f2937',
     flex: 1,
   },
   selectedModalItem: {
-    backgroundColor: '#eff6ff',
+    opacity: 0.8,
   },
   listItemContainer: {
     flexDirection: 'row',
@@ -1336,10 +1348,8 @@ const styles = StyleSheet.create({
   loadingText: {
     marginLeft: 8,
     fontSize: 14,
-    color: '#6b7280',
   },
   emptyText: {
-    color: '#9ca3af',
     fontStyle: 'italic',
     textAlign: 'center',
     padding: 20,
@@ -1350,7 +1360,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 10,
     right: 10,
-    backgroundColor: '#667eea',
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 15,

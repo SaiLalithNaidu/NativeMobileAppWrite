@@ -10,19 +10,19 @@ import {
     StyleSheet,
     Text,
     TouchableOpacity,
-    View,
-    SafeAreaView
+    View
 } from 'react-native';
 import { useCart } from '../contexts/CartContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { db } from '../lib/firebase';
-import { COLORS } from '../src/utils/constants';
 import { SkeletonCategoryCard } from './components/SkeletonLoader';
 
 const CategoriesScreen = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { getTotalItems, getTotal } = useCart();
-  
+  const { theme } = useTheme();
+
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [company, setCompany] = useState(null);
@@ -44,16 +44,16 @@ const CategoriesScreen = () => {
     try {
       setLoading(true);
       const companyId = companyData.companyId || companyData.id;
-      
+
       const categoriesRef = collection(db, 'categories');
       const q = query(categoriesRef, where('companyId', '==', companyId));
       const snapshot = await getDocs(q);
-      
+
       const categoriesData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
-      
+
       console.log('📂 Categories loaded:', categoriesData.length);
       setCategories(categoriesData);
     } catch (error) {
@@ -71,59 +71,59 @@ const CategoriesScreen = () => {
       categoryId: category.id,
       categoryName: category.title
     });
-    
+
     router.push(
       `/products?companyId=${companyId}&companyName=${encodeURIComponent(company.name)}&categoryId=${category.id}&categoryName=${encodeURIComponent(category.title)}`
     );
   };
 
   const renderCategoryCard = ({ item }) => (
-    <TouchableOpacity 
-      style={styles.categoryCard}
+    <TouchableOpacity
+      style={[styles.categoryCard, { backgroundColor: theme.cardBackground }]}
       onPress={() => handleCategoryPress(item)}
       activeOpacity={0.7}
     >
-        <View style={styles.imageContainer}>
-          {item.imageUrl ? (
-            <Image 
-              source={{ uri: item.imageUrl }}
-              style={styles.categoryCardImage}
-              resizeMode="cover"
-            />
-          ) : (
-            <LinearGradient
-              colors={['#f0f7ff', '#e0f0ff']}
-              style={[styles.categoryCardImage, styles.placeholderImage]}
-            >
-              <FontAwesome5 name="box" size={40} color="#0080ff" />
-            </LinearGradient>
+      <View style={styles.imageContainer}>
+        {item.imageUrl ? (
+          <Image
+            source={{ uri: item.imageUrl }}
+            style={styles.categoryCardImage}
+            resizeMode="cover"
+          />
+        ) : (
+          <LinearGradient
+            colors={[theme.inputBackground, theme.background]}
+            style={[styles.categoryCardImage, styles.placeholderImage]}
+          >
+            <FontAwesome5 name="box" size={40} color={theme.primary} />
+          </LinearGradient>
+        )}
+        <View style={styles.imageOverlay}>
+          <LinearGradient
+            colors={['transparent', 'rgba(0,0,0,0.8)']}
+            style={styles.gradientOverlay}
+          />
+        </View>
+      </View>
+      <View style={styles.categoryCardInfo}>
+        <View style={styles.categoryHeader}>
+          <Text style={[styles.categoryCardTitle, { color: theme.text }]} numberOfLines={2}>
+            {item.title || "Unnamed Category"}
+          </Text>
+        </View>
+        <View style={styles.categoryFooter}>
+          {item.productsCount !== undefined && (
+            <View style={[styles.productBadge, { backgroundColor: theme.primary + '15' }]}>
+              <FontAwesome5 name="box" size={10} color={theme.primary} />
+              <Text style={[styles.productCountText, { color: theme.primary }]}>
+                {item.productsCount}
+              </Text>
+            </View>
           )}
-          <View style={styles.imageOverlay}>
-            <LinearGradient
-              colors={['transparent', 'rgba(0,33,71,0.8)']}
-              style={styles.gradientOverlay}
-            />
+          <View style={[styles.arrowIcon, { backgroundColor: theme.primary + '15' }]}>
+            <FontAwesome5 name="arrow-right" size={12} color={theme.primary} />
           </View>
         </View>
-      <View style={styles.categoryCardInfo}>
-          <View style={styles.categoryHeader}>
-            <Text style={styles.categoryCardTitle} numberOfLines={2}>
-              {item.title || "Unnamed Category"}
-          </Text>
-          </View>
-          <View style={styles.categoryFooter}>
-            {item.productsCount !== undefined && (
-              <View style={styles.productBadge}>
-                <FontAwesome5 name="box" size={10} color="#0080ff" />
-                <Text style={styles.productCountText}>
-                  {item.productsCount}
-                </Text>
-              </View>
-            )}
-            <View style={styles.arrowIcon}>
-              <FontAwesome5 name="arrow-right" size={12} color="#0080ff" />
-            </View>
-          </View>
       </View>
     </TouchableOpacity>
   );
@@ -131,28 +131,28 @@ const CategoriesScreen = () => {
   if (loading) {
     return (
       <>
-        <Stack.Screen 
+        <Stack.Screen
           options={{
             headerShown: true,
             headerTitle: '',
-            headerStyle: { 
-              backgroundColor: '#002147',
+            headerStyle: {
+              backgroundColor: theme.primary,
             },
             headerTintColor: 'white',
             headerBackTitle: 'Back',
-          }} 
+          }}
         />
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: theme.background }]}>
           {/* Header */}
           <LinearGradient
-            colors={['#002147', '#004080']}
+            colors={[theme.primary, theme.secondary || '#004080']}
             style={styles.headerGradient}
           >
             <View style={styles.headerContent}>
               <View style={styles.companyIconContainer}>
                 <FontAwesome5 name="folder-open" size={24} color="white" />
               </View>
-              <View style={[styles.headerTitle, { backgroundColor: '#ffffff33', height: 24, borderRadius: 4, width: '60%' }]} />
+              <View style={[styles.headerTitle, { backgroundColor: 'rgba(255,255,255,0.2)', height: 24, borderRadius: 4, width: '60%' }]} />
             </View>
           </LinearGradient>
 
@@ -169,73 +169,73 @@ const CategoriesScreen = () => {
 
   return (
     <>
-      <Stack.Screen 
+      <Stack.Screen
         options={{
           headerShown: true,
-            headerTitle: '',
-            headerStyle: { 
-              backgroundColor: '#002147',
-            },
-            headerTintColor: 'white',
+          headerTitle: '',
+          headerStyle: {
+            backgroundColor: theme.primary,
+          },
+          headerTintColor: 'white',
           headerBackTitle: 'Back',
-        }} 
+        }}
       />
       <View style={styles.screenContainer}>
-        <ScrollView style={styles.container}>
-            <LinearGradient
-              colors={['#002147', '#004080']}
-              style={styles.headerGradient}
-            >
-              <View style={styles.headerContent}>
-                <View style={styles.companyIconContainer}>
-                  <FontAwesome5 name="folder-open" size={24} color="white" />
-                </View>
-                <Text style={styles.headerTitle}>
-                  {company?.name || 'Categories'}
-                </Text>
-                <Text style={styles.headerSubtitle}>
-                  {categories.length} {categories.length === 1 ? 'category' : 'categories'} available
-                </Text>
+        <ScrollView style={[styles.container, { backgroundColor: theme.background }]}>
+          <LinearGradient
+            colors={[theme.primary, theme.secondary || '#004080']}
+            style={styles.headerGradient}
+          >
+            <View style={styles.headerContent}>
+              <View style={styles.companyIconContainer}>
+                <FontAwesome5 name="folder-open" size={24} color="white" />
               </View>
-            </LinearGradient>
-
-            <View style={styles.categoriesSection}>
-              <View style={styles.sectionHeader}>
-                <FontAwesome5 name="th-large" size={16} color="#002147" />
-                <Text style={styles.sectionTitle}>Browse Categories</Text>
-              </View>
-
-          <FlatList
-            data={categories}
-            keyExtractor={(item) => item.id}
-            numColumns={2}
-            columnWrapperStyle={styles.gridRow}
-            contentContainerStyle={styles.gridContainer}
-            renderItem={renderCategoryCard}
-            showsVerticalScrollIndicator={false}
-            scrollEnabled={false}
-            ListEmptyComponent={
-              <View style={styles.emptyContainer}>
-                  <FontAwesome5 name="box-open" size={60} color="#ccc" />
-                <Text style={styles.emptyText}>
-                  No categories found for this company
-                </Text>
-              </View>
-            }
-          />
+              <Text style={styles.headerTitle}>
+                {company?.name || 'Categories'}
+              </Text>
+              <Text style={styles.headerSubtitle}>
+                {categories.length} {categories.length === 1 ? 'category' : 'categories'} available
+              </Text>
             </View>
+          </LinearGradient>
+
+          <View style={[styles.categoriesSection, { backgroundColor: theme.background }]}>
+            <View style={styles.sectionHeader}>
+              <FontAwesome5 name="th-large" size={16} color={theme.primary} />
+              <Text style={[styles.sectionTitle, { color: theme.text }]}>Browse Categories</Text>
+            </View>
+
+            <FlatList
+              data={categories}
+              keyExtractor={(item) => item.id}
+              numColumns={2}
+              columnWrapperStyle={styles.gridRow}
+              contentContainerStyle={styles.gridContainer}
+              renderItem={renderCategoryCard}
+              showsVerticalScrollIndicator={false}
+              scrollEnabled={false}
+              ListEmptyComponent={
+                <View style={styles.emptyContainer}>
+                  <FontAwesome5 name="box-open" size={60} color={theme.textLight} />
+                  <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
+                    No categories found for this company
+                  </Text>
+                </View>
+              }
+            />
+          </View>
         </ScrollView>
 
         {/* Floating View Cart Button - Outside ScrollView */}
         {getTotalItems() > 0 && (
-          <TouchableOpacity 
-            style={styles.viewCartButton}
+          <TouchableOpacity
+            style={[styles.viewCartButton, { backgroundColor: theme.primary }]}
             onPress={() => router.push('/(tabs)/cart')}
             activeOpacity={0.9}
           >
             <View style={styles.cartButtonLeft}>
               <View style={styles.cartItemBadge}>
-                <Text style={styles.cartItemBadgeText}>{getTotalItems()}</Text>
+                <Text style={[styles.cartItemBadgeText, { color: theme.primary }]}>{getTotalItems()}</Text>
               </View>
               <Text style={styles.viewCartText}>View Cart</Text>
             </View>
@@ -257,93 +257,87 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
-    headerGradient: {
-      paddingTop: 20,
-      paddingBottom: 30,
-      paddingHorizontal: 20,
-    },
-    headerContent: {
-      alignItems: 'center',
-    },
-    companyIconContainer: {
-      width: 56,
-      height: 56,
-      borderRadius: 28,
-      backgroundColor: 'rgba(255, 255, 255, 0.2)',
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginBottom: 12,
-    },
-    headerTitle: {
-      fontSize: 24,
-      fontWeight: 'bold',
-      color: 'white',
-      textAlign: 'center',
-      marginBottom: 8,
-      textShadowColor: 'rgba(0, 0, 0, 0.3)',
-      textShadowOffset: { width: 1, height: 1 },
-      textShadowRadius: 3,
-    },
-    headerSubtitle: {
-      fontSize: 14,
-      color: '#b3d9ff',
-      textAlign: 'center',
-    },
+  headerGradient: {
+    paddingTop: 20,
+    paddingBottom: 30,
+    paddingHorizontal: 20,
+  },
+  headerContent: {
+    alignItems: 'center',
+  },
+  companyIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: 'white',
+    textAlign: 'center',
+    marginBottom: 8,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.9)',
+    textAlign: 'center',
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
   },
   loadingText: {
     marginTop: 10,
-    color: '#666',
     fontSize: 16,
   },
-    categoriesSection: {
-      marginTop: -15,
-      backgroundColor: '#f5f5f5',
-      borderTopLeftRadius: 20,
-      borderTopRightRadius: 20,
-      paddingTop: 8,
+  categoriesSection: {
+    marginTop: -15,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: 8,
   },
-    sectionHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: 20,
-      paddingVertical: 16,
-      gap: 10,
-    },
-    sectionTitle: {
-      fontSize: 18,
-      fontWeight: '700',
-      color: '#002147',
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    gap: 10,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
   },
   gridContainer: {
-      paddingHorizontal: 15,
+    paddingHorizontal: 15,
     paddingBottom: 60,
   },
   gridRow: {
     justifyContent: 'space-between',
-      marginBottom: 16,
+    marginBottom: 16,
   },
   categoryCard: {
-    backgroundColor: 'white',
-      borderRadius: 16,
+    borderRadius: 16,
     width: '48%',
     overflow: 'hidden',
     shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.15,
-      shadowRadius: 6,
-      elevation: 5,
-    },
-    imageContainer: {
-      position: 'relative',
-      width: '100%',
-      height: 140,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 5,
+  },
+  imageContainer: {
+    position: 'relative',
+    width: '100%',
+    height: 140,
   },
   categoryCardImage: {
     width: '100%',
@@ -353,70 +347,65 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-    imageOverlay: {
-      position: 'absolute',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      height: 60,
-    },
-    gradientOverlay: {
-      flex: 1,
-    },
+  imageOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 60,
+  },
+  gradientOverlay: {
+    flex: 1,
+  },
   categoryCardInfo: {
-      padding: 14,
-    },
-    categoryHeader: {
-      marginBottom: 10,
+    padding: 14,
+  },
+  categoryHeader: {
+    marginBottom: 10,
   },
   categoryCardTitle: {
-      fontSize: 15,
-      fontWeight: '700',
-      color: '#002147',
-      lineHeight: 20,
-    },
-    categoryFooter: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-    },
-    productBadge: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: '#f0f7ff',
-      paddingHorizontal: 8,
-      paddingVertical: 4,
-      borderRadius: 10,
-      gap: 5,
+    fontSize: 15,
+    fontWeight: '700',
+    lineHeight: 20,
+  },
+  categoryFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  productBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+    gap: 5,
   },
   productCountText: {
-      fontSize: 11,
-      fontWeight: '600',
-      color: '#0080ff',
-    },
-    arrowIcon: {
-      width: 24,
-      height: 24,
-      borderRadius: 12,
-      backgroundColor: '#f0f7ff',
-      justifyContent: 'center',
-      alignItems: 'center',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  arrowIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-      paddingTop: 80,
-      paddingHorizontal: 40,
+    paddingTop: 80,
+    paddingHorizontal: 40,
   },
   emptyText: {
-    color: '#999',
     fontSize: 16,
     textAlign: 'center',
-      marginTop: 16,
-      lineHeight: 24,
+    marginTop: 16,
+    lineHeight: 24,
   },
-  
+
   // Floating View Cart Button
   viewCartButton: {
     position: 'absolute',
@@ -427,7 +416,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: COLORS.PRIMARY,
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderRadius: 12,
@@ -451,7 +439,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cartItemBadgeText: {
-    color: COLORS.PRIMARY,
     fontSize: 15,
     fontWeight: '700',
   },
@@ -470,4 +457,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
-});export default CategoriesScreen;
+  categoriesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    gap: 16,
+  },
+});
+
+export default CategoriesScreen;

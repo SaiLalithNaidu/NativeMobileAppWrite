@@ -7,6 +7,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import {
   FlatList,
   Image,
+  Modal,
   RefreshControl,
   StyleSheet,
   Text,
@@ -14,6 +15,7 @@ import {
   View
 } from "react-native";
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { db } from '../../lib/firebase';
 import ImageCarousel from '../components/imageCarousel';
 import { SkeletonCompanyCard } from '../components/SkeletonLoader';
@@ -23,81 +25,74 @@ import { SkeletonCompanyCard } from '../components/SkeletonLoader';
 // ============================================================================
 
 // Companies List Screen
-const CompaniesScreen = ({ companies, onCompanySelect, getCategoryCount, getProductCount, refreshing, onRefresh }) => {
+const CompaniesScreen = ({ companies, onCompanySelect, getCategoryCount, getProductCount, refreshing, onRefresh, theme }) => {
   return (
-      <View style={styles.companiesListContainer}>
-        {/* <View style={styles.sectionHeader}>
-          <FontAwesome5 name="building" size={20} color="#002147" />
-          <Text style={styles.sectionTitle}>Our Companies</Text>
-        </View> */}
-        <FlatList
-      data={companies}
-      keyExtractor={(item) => item.id}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          colors={['#0080ff']}
-          progressBackgroundColor="#f5f5f5"
-        />
-      }
-      renderItem={({ item }) => (
-        <TouchableOpacity 
-          style={styles.categoryItem}
-          onPress={() => onCompanySelect(item)}
-          activeOpacity={0.7}
-        >
-            <LinearGradient
-              colors={['#f8f9fa', '#ffffff']}
-              style={styles.companyCard}
-            >
+    <View style={[styles.companiesListContainer, { backgroundColor: theme.background }]}>
+      <FlatList
+        data={companies}
+        keyExtractor={(item) => item.id}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[theme.primary]}
+            progressBackgroundColor={theme.cardBackground}
+          />
+        }
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={styles.categoryItem}
+            onPress={() => onCompanySelect(item)}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.companyCard, { backgroundColor: theme.cardBackground }]}>
               {item.logoUrl ? (
-                <View style={styles.logoWrapper}>
-                  <Image 
+                <View style={[styles.logoWrapper, { backgroundColor: theme.cardBackground, borderColor: theme.border }]}>
+                  <Image
                     source={{ uri: item.logoUrl }}
                     style={styles.companyLogo}
                     resizeMode="contain"
                   />
                 </View>
               ) : (
-                <View style={[styles.logoWrapper, styles.logoPlaceholder]}>
-                  <FontAwesome5 name="building" size={30} color="#002147" />
+                <View style={[styles.logoWrapper, styles.logoPlaceholder, { borderColor: theme.border }]}>
+                  <FontAwesome5 name="building" size={30} color={theme.primary} />
                 </View>
               )}
-          <View style={styles.categoryInfo}>
-            <Text style={styles.categoryName}>
-              {item.name || "Unnamed Company"}
-            </Text>
-            <View style={styles.categoryDescription}>
-                <View style={styles.statsBadge}>
-                  <FontAwesome5 name="folder" size={12} color="#0080ff" />
-                  <Text style={styles.statsText}>
-                    {getCategoryCount(item)}
-                  </Text>
+              <View style={styles.categoryInfo}>
+                <Text style={[styles.categoryName, { color: theme.text }]}>
+                  {item.name || "Unnamed Company"}
+                </Text>
+                <View style={styles.categoryDescription}>
+                  <View style={[styles.statsBadge, { backgroundColor: theme.iconBackground }]}>
+                    <FontAwesome5 name="folder" size={12} color={theme.primary} />
+                    <Text style={[styles.statsText, { color: theme.primary }]}>
+                      {getCategoryCount(item)}
+                    </Text>
+                  </View>
+                  <View style={[styles.statsBadge, { backgroundColor: theme.iconBackground }]}>
+                    <FontAwesome5 name="box" size={12} color={theme.primary} />
+                    <Text style={[styles.statsText, { color: theme.primary }]}>
+                      {getProductCount(item)}
+                    </Text>
+                  </View>
                 </View>
-                <View style={styles.statsBadge}>
-                  <FontAwesome5 name="box" size={12} color="#0080ff" />
-                  <Text style={styles.statsText}>
-                    {getProductCount(item)}
-                  </Text>
-                </View>
-            </View>
-          </View>
-              <View style={styles.arrowIcon}>
-                <FontAwesome5 name="chevron-right" size={16} color="#0080ff" />
               </View>
-            </LinearGradient>
-        </TouchableOpacity>
-      )}
-          showsVerticalScrollIndicator={false}
-      ListEmptyComponent={
+              <View style={[styles.arrowIcon, { backgroundColor: theme.iconBackground }]}>
+                <FontAwesome5 name="chevron-right" size={16} color={theme.primary} />
+              </View>
+            </View>
+          </TouchableOpacity>
+        )}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <FontAwesome5 name="building" size={50} color="#ccc" />
-            <Text style={styles.emptyText}>No companies available</Text>
+            <FontAwesome5 name="building" size={50} color={theme.textLight} />
+            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>No companies available</Text>
           </View>
-      }
-    />
-      </View>
+        }
+      />
+    </View>
   );
 };
 
@@ -110,7 +105,8 @@ const CompaniesScreen = ({ companies, onCompanySelect, getCategoryCount, getProd
 const Index = () => {
   const router = useRouter();
   const { user } = useAuth();
-  
+  const { theme } = useTheme();
+
   // Get greeting based on time of day
   const getGreeting = useCallback(() => {
     const hour = new Date().getHours();
@@ -118,11 +114,11 @@ const Index = () => {
     if (hour < 17) return '☀️ Good Afternoon';
     return '🌙 Good Evening';
   }, []);
-  
+
   const getUserName = useCallback(() => {
     return user?.displayName?.split(' ')[0] || 'Guest';
   }, [user]);
-  
+
   // State Management
   const [companies, setCompanies] = useState([]);
   const [allCategories, setAllCategories] = useState([]);
@@ -130,6 +126,7 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
+  const [modalVisible, setModalVisible] = useState(true);
 
   // ============================================================================
   // DATA FETCHING FUNCTIONS
@@ -195,13 +192,13 @@ const Index = () => {
       } else {
         setLoading(true);
       }
-      
+
       const [companiesData, categoriesData, productsData] = await Promise.all([
         fetchCompanies(),
         fetchCategories(),
         fetchProducts()
       ]);
-      
+
       setCompanies(companiesData);
       setAllCategories(categoriesData);
       setAllProducts(productsData);
@@ -259,7 +256,7 @@ const Index = () => {
 
   const handleCompanySelect = (company) => {
     console.log('🏢 Navigating to categories for:', company.name);
-    
+
     // Navigate to full-screen categories page (PhonePe style)
     router.push({
       pathname: '/categories',
@@ -269,34 +266,27 @@ const Index = () => {
     });
   };
 
-    // ============================================================================
+  // ============================================================================
   // LOADING & ERROR STATES
   // ============================================================================
 
   if (loading) {
     return (
-      <View style={styles.mainContainer}>
+      <View style={[styles.mainContainer, { backgroundColor: theme.background }]}>
         {/* Header */}
         <LinearGradient
-          colors={['#002147', '#004080']}
+          colors={[theme.primary, theme.primaryDark]}
           style={styles.headerGradient}
         >
-          <View style={styles.headerContent}>
-            <View style={styles.welcomeContainer}>
-              <Text style={styles.greetingText}>{getGreeting()}</Text>
-              <Text style={styles.userNameText}>{getUserName()}</Text>
-              <Text style={styles.taglineText}>Browse our exclusive aquatic collection</Text>
-            </View>
-          </View>
         </LinearGradient>
 
         {/* Carousel Skeleton */}
         <View style={styles.imageContainer}>
-          <View style={[styles.carouselSkeleton, { backgroundColor: '#e0e0e0', height: 200, borderRadius: 12 }]} />
+          <View style={[styles.carouselSkeleton, { backgroundColor: theme.border, height: 200, borderRadius: 12 }]} />
         </View>
 
         {/* Company Cards Skeleton */}
-        <View style={styles.contentContainer}>
+        <View style={[styles.contentContainer, { backgroundColor: theme.background }]}>
           <SkeletonCompanyCard />
           <SkeletonCompanyCard />
           <SkeletonCompanyCard />
@@ -307,8 +297,8 @@ const Index = () => {
 
   if (error) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>{error}</Text>
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
+        <Text style={[styles.errorText, { color: theme.error }]}>{error}</Text>
       </View>
     );
   }
@@ -318,32 +308,57 @@ const Index = () => {
   // ============================================================================
 
   return (
-    <View style={styles.mainContainer}>
-        <LinearGradient
-          colors={['#002147', '#004080']}
-          style={styles.headerGradient}
-        >
-          <View style={styles.headerContent}>
-            <View style={styles.welcomeContainer}>
-              <Text style={styles.greetingText}>{getGreeting()}</Text>
-              <Text style={styles.userNameText}>{getUserName()}</Text>
-              <Text style={styles.taglineText}>Browse our exclusive aquatic collection</Text>
-            </View>
+    <View style={[styles.mainContainer, { backgroundColor: theme.background }]}>
+      {/* Welcome Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <LinearGradient
+              colors={[theme.gradientStart, theme.gradientEnd, theme.primary]}
+              style={styles.modalGradient}
+            >
+              <View style={styles.modalContent}>
+                <Text style={styles.modalGreeting}>{getGreeting()}</Text>
+                <Text style={styles.modalUserName}>{getUserName()}</Text>
+                <Text style={styles.modalTagline}>Browse our exclusive aquatic collection</Text>
+
+                <TouchableOpacity
+                  style={[styles.modalButton, { backgroundColor: theme.cardBackground }]}
+                  onPress={() => setModalVisible(false)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.modalButtonText, { color: theme.primary }]}>Get Started</Text>
+                </TouchableOpacity>
+              </View>
+            </LinearGradient>
           </View>
-        </LinearGradient>
-
-        <View style={styles.imageContainer}>
-          <ImageCarousel />
         </View>
+      </Modal>
 
-      <View style={styles.contentContainer}>
-        <CompaniesScreen 
+      {/* <LinearGradient
+        colors={['#002147', '#004080']}
+        style={styles.headerGradient}
+      >
+      </LinearGradient> */}
+
+      <View style={styles.imageContainer}>
+        <ImageCarousel />
+      </View>
+
+      <View style={[styles.contentContainer, { backgroundColor: theme.background }]}>
+        <CompaniesScreen
           companies={companies}
           onCompanySelect={handleCompanySelect}
           getCategoryCount={getCategoryCount}
           getProductCount={getProductCount}
           refreshing={refreshing}
           onRefresh={onRefresh}
+          theme={theme}
         />
       </View>
     </View>
@@ -351,163 +366,215 @@ const Index = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
+  loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-      backgroundColor: '#f5f5f5',
   },
   mainContainer: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
-    headerGradient: {
-      paddingTop: 60,
-      paddingBottom: 20,
-      paddingHorizontal: 20,
-    },
-    headerContent: {
-      alignItems: 'center',
-      bottom:25,
-    },
-    welcomeContainer: {
-      alignItems: 'center',
-    },
-    greetingText: {
-      fontSize: 18,
-      color: '#b3d9ff',
-      fontWeight: '600',
-      letterSpacing: 0.5,
-    },
-    userNameText: {
-      fontSize: 32,
-      fontWeight: 'bold',
-      color: 'white',
-      marginTop: 8,
-      textShadowColor: 'rgba(0, 0, 0, 0.3)',
-      textShadowOffset: { width: 1, height: 1 },
-      textShadowRadius: 3,
-    },
-    taglineText: {
-      fontSize: 13,
-      color: '#b3d9ff',
-      marginTop: 12,
-      fontWeight: '500',
-      lineHeight: 18,
-    },
+  headerGradient: {
+    paddingTop: 60,
+    paddingBottom: 10,
+    paddingHorizontal: 20,
+  },
+  headerContent: {
+    alignItems: 'center',
+    bottom: 25,
+  },
+  welcomeContainer: {
+    alignItems: 'center',
+  },
+  greetingText: {
+    fontSize: 18,
+    color: '#b3d9ff',
+    fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+  userNameText: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: 'white',
+    marginTop: 8,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
+  },
+  taglineText: {
+    fontSize: 13,
+    color: '#b3d9ff',
+    marginTop: 12,
+    fontWeight: '500',
+    lineHeight: 18,
+  },
   contentContainer: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
-    companiesListContainer: {
-      flex: 1,
-      paddingHorizontal: 16,
-      backgroundColor: '#f5f5f5',
-    },
-    sectionHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingTop: 20,
-      paddingBottom: 16,
-      gap: 10,
-    },
-    sectionTitle: {
-      fontSize: 20,
+  companiesListContainer: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: 20,
+    paddingBottom: 16,
+    gap: 10,
+  },
+  sectionTitle: {
+    fontSize: 20,
     fontWeight: "bold",
-      color: '#002147',
   },
   categoryItem: {
     marginBottom: 12,
-    },
-    companyCard: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      padding: 16,
+  },
+  companyCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
     borderRadius: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.15,
+    shadowOpacity: 0.15,
     shadowRadius: 4,
-      elevation: 4,
-    },
-    logoWrapper: {
-      width: 70,
-      height: 70,
-      borderRadius: 12,
-      backgroundColor: 'white',
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginRight: 16,
-      borderWidth: 1,
-      borderColor: '#e0e0e0',
-    },
-    logoPlaceholder: {
-      backgroundColor: '#f0f7ff',
+    elevation: 4,
+  },
+  logoWrapper: {
+    width: 70,
+    height: 70,
+    borderRadius: 12,
+    backgroundColor: 'white',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  logoPlaceholder: {
   },
   companyLogo: {
-      width: 50,
-      height: 50,
-    },
-    categoryInfo: {
-      flex: 1,
-      gap: 8,
+    width: 50,
+    height: 50,
+  },
+  categoryInfo: {
+    flex: 1,
+    gap: 8,
   },
   categoryName: {
-      fontSize: 18,
-      fontWeight: "700",
-      color: '#002147',
-      marginBottom: 4,
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 4,
   },
-    categoryDescription: {
-      flexDirection: 'row',
-      gap: 12,
-    },
-    statsBadge: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: '#f0f7ff',
-      paddingHorizontal: 10,
-      paddingVertical: 5,
-      borderRadius: 12,
-      gap: 6,
-    },
-    statsText: {
-      fontSize: 13,
-      color: '#0080ff',
-      fontWeight: '600',
-    },
-    arrowIcon: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
-      backgroundColor: '#f0f7ff',
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    emptyContainer: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      paddingTop: 60,
-    },
-    emptyText: {
-      color: "#999",
-      marginTop: 16,
-      textAlign: 'center',
-      fontSize: 16,
+  categoryDescription: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  statsBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    gap: 6,
+  },
+  statsText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  arrowIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 60,
+  },
+  emptyText: {
+    marginTop: 16,
+    textAlign: 'center',
+    fontSize: 16,
   },
   errorText: {
-    color: "red",
     fontSize: 16,
     textAlign: 'center',
   },
   loadingText: {
     marginTop: 10,
-      color: "#666",
-      fontSize: 16,
+    fontSize: 16,
   },
-  imageContainer:{
+  imageContainer: {
     marginTop: -20,
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    width: '85%',
+    maxWidth: 400,
+    borderRadius: 20,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  modalGradient: {
+    padding: 40,
+  },
+  modalContent: {
+    alignItems: 'center',
+  },
+  modalGreeting: {
+    fontSize: 20,
+    color: '#b3d9ff',
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
+  modalUserName: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 12,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
+  },
+  modalTagline: {
+    fontSize: 15,
+    color: '#b3d9ff',
+    marginBottom: 30,
+    fontWeight: '500',
+    lineHeight: 22,
+    textAlign: 'center',
+  },
+  modalButton: {
+    backgroundColor: 'white',
+    paddingHorizontal: 40,
+    paddingVertical: 14,
+    borderRadius: 25,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  modalButtonText: {
+    color: '#0080ff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
   },
 });
 

@@ -11,55 +11,56 @@
 import { FontAwesome5 } from '@expo/vector-icons';
 import React from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { COLORS } from '../../../src/utils/constants';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 export const CartItem = ({ item, onIncrease, onDecrease }) => {
+  const { theme } = useTheme();
   if (!item) return null;
 
   const itemTotal = (item.price * item.quantity).toFixed(2);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.cardBackground }]}>
       <View style={styles.itemLeft}>
         {item.imageUrl ? (
-          <Image 
+          <Image
             source={{ uri: item.imageUrl }}
             style={styles.itemImage}
             resizeMode="cover"
           />
         ) : (
-          <View style={[styles.itemImage, styles.placeholderImage]}>
-            <FontAwesome5 name="box" size={24} color="#ccc" />
+          <View style={[styles.itemImage, styles.placeholderImage, { backgroundColor: theme.iconBackground }]}>
+            <FontAwesome5 name="box" size={24} color={theme.textLight} />
           </View>
         )}
         <View style={styles.itemDetails}>
-          <Text style={styles.itemTitle} numberOfLines={2}>
+          <Text style={[styles.itemTitle, { color: theme.text }]} numberOfLines={2}>
             {item.title}
           </Text>
-          <Text style={styles.itemPrice}>₹{item.price}</Text>
+          <Text style={[styles.itemPrice, { color: theme.primary }]}>₹{item.price}</Text>
           {item.originalPrice && (
-            <Text style={styles.itemOriginalPrice}>₹{item.originalPrice}</Text>
+            <Text style={[styles.itemOriginalPrice, { color: theme.textSecondary }]}>₹{item.originalPrice}</Text>
           )}
         </View>
       </View>
 
       <View style={styles.itemRight}>
-        <View style={styles.quantityControl}>
-          <TouchableOpacity 
+        <View style={[styles.quantityControl, { backgroundColor: theme.primary }]}>
+          <TouchableOpacity
             style={styles.quantityButton}
             onPress={() => onDecrease(item.id)}
           >
             <FontAwesome5 name="minus" size={10} color="#fff" />
           </TouchableOpacity>
           <Text style={styles.quantityText}>{item.quantity}</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.quantityButton}
             onPress={() => onIncrease(item)}
           >
             <FontAwesome5 name="plus" size={10} color="#fff" />
           </TouchableOpacity>
         </View>
-        <Text style={styles.itemTotal}>₹{itemTotal}</Text>
+        <Text style={[styles.itemTotal, { color: theme.text }]}>₹{itemTotal}</Text>
       </View>
     </View>
   );
@@ -69,7 +70,6 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: 'white',
     borderRadius: 12,
     padding: 12,
     marginBottom: 12,
@@ -87,7 +87,6 @@ const styles = StyleSheet.create({
     width: 70,
     height: 70,
     borderRadius: 8,
-    backgroundColor: '#f0f0f0',
   },
   placeholderImage: {
     justifyContent: 'center',
@@ -101,18 +100,15 @@ const styles = StyleSheet.create({
   itemTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#333',
     marginBottom: 6,
   },
   itemPrice: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#28a745',
     marginBottom: 2,
   },
   itemOriginalPrice: {
     fontSize: 12,
-    color: '#999',
     textDecorationLine: 'line-through',
   },
   itemRight: {
@@ -123,7 +119,6 @@ const styles = StyleSheet.create({
   quantityControl: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.PRIMARY,
     borderRadius: 6,
     paddingHorizontal: 4,
     paddingVertical: 4,
@@ -147,7 +142,6 @@ const styles = StyleSheet.create({
   itemTotal: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#333',
   },
 });
 

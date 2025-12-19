@@ -25,12 +25,14 @@ import {
   View
 } from 'react-native';
 import Toast from 'react-native-toast-message';
+import { useTheme } from '../../contexts/ThemeContext';
 import { db } from '../../lib/firebase';
 import { COLORS } from '../../src/utils/constants';
 import OrdersSkeleton from '../components/skeletons/OrdersSkeleton';
 
 export default function OrdersScreen() {
   const router = useRouter();
+  const { theme } = useTheme();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -121,10 +123,10 @@ export default function OrdersScreen() {
         const customerName = (order.customer?.name || '').toLowerCase();
         const customerPhone = (order.customer?.phone || '').toLowerCase();
         const orderId = (order.orderId || '').toLowerCase();
-        
-        return customerName.includes(query) || 
-               customerPhone.includes(query) ||
-               orderId.includes(query);
+
+        return customerName.includes(query) ||
+          customerPhone.includes(query) ||
+          orderId.includes(query);
       });
     }
 
@@ -157,19 +159,19 @@ export default function OrdersScreen() {
 
     return (
       <TouchableOpacity
-        style={styles.orderCard}
+        style={[styles.orderCard, { backgroundColor: theme.cardBackground }]}
         onPress={() => handleOrderPress(order)}
         activeOpacity={0.7}
       >
         {/* Header */}
-        <View style={styles.orderHeader}>
+        <View style={[styles.orderHeader, { borderBottomColor: theme.border }]}>
           <View style={styles.orderHeaderLeft}>
-            <Text style={styles.orderId}>{order.orderId}</Text>
-            <Text style={styles.orderDate}>
-              {orderDate.toLocaleDateString('en-IN', { 
-                day: 'numeric', 
-                month: 'short', 
-                year: 'numeric' 
+            <Text style={[styles.orderId, { color: theme.text }]}>{order.orderId}</Text>
+            <Text style={[styles.orderDate, { color: theme.textSecondary }]}>
+              {orderDate.toLocaleDateString('en-IN', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric'
               })}
             </Text>
           </View>
@@ -182,49 +184,49 @@ export default function OrdersScreen() {
 
         {/* Customer Info */}
         <View style={styles.customerInfo}>
-          <FontAwesome5 name="user" size={14} color="#666" />
-          <Text style={styles.customerName}>{order.customer?.name || 'Unknown'}</Text>
+          <FontAwesome5 name="user" size={14} color={theme.textSecondary} />
+          <Text style={[styles.customerName, { color: theme.text }]}>{order.customer?.name || 'Unknown'}</Text>
           {order.customer?.phone && (
             <>
-              <Text style={styles.separator}>•</Text>
-              <FontAwesome5 name="phone" size={12} color="#666" />
-              <Text style={styles.customerPhone}>{order.customer.phone}</Text>
+              <Text style={[styles.separator, { color: theme.border }]}>•</Text>
+              <FontAwesome5 name="phone" size={12} color={theme.textSecondary} />
+              <Text style={[styles.customerPhone, { color: theme.textSecondary }]}>{order.customer.phone}</Text>
             </>
           )}
         </View>
 
         {/* Items Count */}
         <View style={styles.itemsInfo}>
-          <FontAwesome5 name="box" size={14} color="#666" />
-          <Text style={styles.itemsText}>
+          <FontAwesome5 name="box" size={14} color={theme.textSecondary} />
+          <Text style={[styles.itemsText, { color: theme.textSecondary }]}>
             {itemCount} {itemCount === 1 ? 'item' : 'items'}
           </Text>
         </View>
 
         {/* Payment Info */}
-        <View style={styles.paymentSection}>
+        <View style={[styles.paymentSection, { backgroundColor: theme.iconBackground }]}>
           <View style={styles.paymentRow}>
-            <Text style={styles.paymentLabel}>Total Amount:</Text>
-            <Text style={styles.totalAmount}>₹{totalAmount.toFixed(2)}</Text>
+            <Text style={[styles.paymentLabel, { color: theme.textSecondary }]}>Total Amount:</Text>
+            <Text style={[styles.totalAmount, { color: theme.text }]}>₹{totalAmount.toFixed(2)}</Text>
           </View>
           <View style={styles.paymentRow}>
-            <Text style={styles.paymentLabel}>Paid Amount:</Text>
-            <Text style={[styles.paidAmount, paidAmount > 0 && { color: COLORS.SUCCESS }]}>
+            <Text style={[styles.paymentLabel, { color: theme.textSecondary }]}>Paid Amount:</Text>
+            <Text style={[styles.paidAmount, paidAmount > 0 && { color: theme.success }, { color: theme.textSecondary }]}>
               ₹{paidAmount.toFixed(2)}
             </Text>
           </View>
           {pendingAmount > 0 && (
             <View style={styles.paymentRow}>
-              <Text style={styles.paymentLabel}>Pending Amount:</Text>
-              <Text style={styles.pendingAmount}>₹{pendingAmount.toFixed(2)}</Text>
+              <Text style={[styles.paymentLabel, { color: theme.textSecondary }]}>Pending Amount:</Text>
+              <Text style={[styles.pendingAmount, { color: theme.error }]}>₹{pendingAmount.toFixed(2)}</Text>
             </View>
           )}
         </View>
 
         {/* View Details */}
         <View style={styles.viewDetailsRow}>
-          <Text style={styles.viewDetailsText}>Tap to view & update</Text>
-          <AntDesign name="right" size={14} color={COLORS.PRIMARY} />
+          <Text style={[styles.viewDetailsText, { color: theme.primary }]}>Tap to view & update</Text>
+          <AntDesign name="right" size={14} color={theme.primary} />
         </View>
       </TouchableOpacity>
     );
@@ -234,36 +236,36 @@ export default function OrdersScreen() {
    * Render filter buttons
    */
   const renderFilters = () => (
-    <View style={styles.filtersContainer}>
+    <View style={[styles.filtersContainer, { backgroundColor: theme.cardBackground, borderBottomColor: theme.border }]}>
       <TouchableOpacity
-        style={[styles.filterButton, filter === 'all' && styles.filterButtonActive]}
+        style={[styles.filterButton, filter === 'all' && [styles.filterButtonActive, { borderColor: theme.primary }]]}
         onPress={() => setFilter('all')}
       >
-        <Text style={[styles.filterButtonText, filter === 'all' && styles.filterButtonTextActive]}>
+        <Text style={[styles.filterButtonText, filter === 'all' && { color: theme.primary }]}>
           All ({orders.length})
         </Text>
       </TouchableOpacity>
       <TouchableOpacity
-        style={[styles.filterButton, filter === 'pending' && styles.filterButtonActive]}
+        style={[styles.filterButton, filter === 'pending' && [styles.filterButtonActive, { borderColor: theme.primary }]]}
         onPress={() => setFilter('pending')}
       >
-        <Text style={[styles.filterButtonText, filter === 'pending' && styles.filterButtonTextActive]}>
+        <Text style={[styles.filterButtonText, filter === 'pending' && { color: theme.primary }]}>
           Not Paid
         </Text>
       </TouchableOpacity>
       <TouchableOpacity
-        style={[styles.filterButton, filter === 'partial' && styles.filterButtonActive]}
+        style={[styles.filterButton, filter === 'partial' && [styles.filterButtonActive, { borderColor: theme.primary }]]}
         onPress={() => setFilter('partial')}
       >
-        <Text style={[styles.filterButtonText, filter === 'partial' && styles.filterButtonTextActive]}>
+        <Text style={[styles.filterButtonText, filter === 'partial' && { color: theme.primary }]}>
           Partial
         </Text>
       </TouchableOpacity>
       <TouchableOpacity
-        style={[styles.filterButton, filter === 'paid' && styles.filterButtonActive]}
+        style={[styles.filterButton, filter === 'paid' && [styles.filterButtonActive, { borderColor: theme.primary }]]}
         onPress={() => setFilter('paid')}
       >
-        <Text style={[styles.filterButtonText, filter === 'paid' && styles.filterButtonTextActive]}>
+        <Text style={[styles.filterButtonText, filter === 'paid' && { color: theme.primary }]}>
           Paid
         </Text>
       </TouchableOpacity>
@@ -275,10 +277,10 @@ export default function OrdersScreen() {
    */
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
-      <FontAwesome5 name="receipt" size={64} color="#ddd" />
-      <Text style={styles.emptyTitle}>No Orders Yet</Text>
-      <Text style={styles.emptySubtitle}>
-        {filter === 'all' 
+      <FontAwesome5 name="receipt" size={64} color={theme.textLight} />
+      <Text style={[styles.emptyTitle, { color: theme.text }]}>No Orders Yet</Text>
+      <Text style={[styles.emptySubtitle, { color: theme.textSecondary }]}>
+        {filter === 'll'
           ? 'Orders will appear here once customers start placing them'
           : `No orders with "${filter}" status`}
       </Text>
@@ -293,7 +295,7 @@ export default function OrdersScreen() {
   const filteredOrders = getFilteredOrders();
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={[styles.container, { backgroundColor: theme.background }]} >
       {/* Header */}
       {/* <View style={styles.header}>
         <Text style={styles.headerTitle}>Order Management</Text>
@@ -303,25 +305,26 @@ export default function OrdersScreen() {
       </View> */}
 
       {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <FontAwesome5 name="search" size={16} color="#999" style={styles.searchIcon} />
+      <View style={[styles.searchContainer, { backgroundColor: theme.cardBackground, borderBottomColor: theme.border }]} >
+        <FontAwesome5 name="search" size={16} color={theme.textLight} style={styles.searchIcon} />
         <TextInput
-          style={styles.searchInput}
+          style={[styles.searchInput, { color: theme.text }]}
           placeholder="Search by name, phone, or order ID..."
-          placeholderTextColor="#999"
+          placeholderTextColor={theme.textLight}
           value={searchQuery}
           onChangeText={setSearchQuery}
           autoCapitalize="none"
         />
         {searchQuery.length > 0 && (
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={() => setSearchQuery('')}
             style={styles.clearButton}
           >
-            <FontAwesome5 name="times-circle" size={16} color="#999" />
+            <FontAwesome5 name="times-circle" size={16} color={theme.textLight} />
           </TouchableOpacity>
-        )}
-      </View>
+        )
+        }
+      </View >
 
       {/* Filters */}
       {renderFilters()}
@@ -345,51 +348,42 @@ export default function OrdersScreen() {
       />
 
       <Toast />
-    </ScrollView>
+    </ScrollView >
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
   },
   loadingText: {
     marginTop: 12,
-    color: '#666',
     fontSize: 16,
   },
   header: {
-    backgroundColor: 'white',
     paddingHorizontal: 20,
     paddingVertical: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
     marginBottom: 4,
   },
   headerSubtitle: {
     fontSize: 14,
-    color: '#666',
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'white',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
   },
   searchIcon: {
     marginRight: 10,
@@ -397,7 +391,6 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 15,
-    color: '#333',
     paddingVertical: 8,
   },
   clearButton: {
@@ -407,37 +400,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: 'white',
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
     gap: 8,
   },
   filterButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#f0f0f0',
     borderWidth: 1,
     borderColor: 'transparent',
   },
   filterButtonActive: {
-    backgroundColor: COLORS.ACCENT_LIGHT,
-    borderColor: COLORS.PRIMARY,
+    borderWidth: 1,
   },
   filterButtonText: {
     fontSize: 13,
-    color: '#666',
     fontWeight: '600',
   },
   filterButtonTextActive: {
-    color: COLORS.PRIMARY,
   },
   listContainer: {
     padding: 16,
     paddingBottom: 60,
   },
   orderCard: {
-    backgroundColor: 'white',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -454,7 +440,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
   },
   orderHeaderLeft: {
     flex: 1,
@@ -462,12 +447,10 @@ const styles = StyleSheet.create({
   orderId: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
     marginBottom: 4,
   },
   orderDate: {
     fontSize: 12,
-    color: '#999',
   },
   statusBadge: {
     paddingHorizontal: 12,
@@ -486,16 +469,13 @@ const styles = StyleSheet.create({
   },
   customerName: {
     fontSize: 14,
-    color: '#333',
     fontWeight: '600',
   },
   separator: {
-    color: '#ccc',
     marginHorizontal: 4,
   },
   customerPhone: {
     fontSize: 13,
-    color: '#666',
   },
   itemsInfo: {
     flexDirection: 'row',
@@ -505,10 +485,8 @@ const styles = StyleSheet.create({
   },
   itemsText: {
     fontSize: 13,
-    color: '#666',
   },
   paymentSection: {
-    backgroundColor: '#f8f9fa',
     borderRadius: 8,
     padding: 12,
     marginBottom: 12,
@@ -521,22 +499,18 @@ const styles = StyleSheet.create({
   },
   paymentLabel: {
     fontSize: 13,
-    color: '#666',
   },
   totalAmount: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
   },
   paidAmount: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#666',
   },
   pendingAmount: {
     fontSize: 14,
     fontWeight: '700',
-    color: COLORS.ERROR,
   },
   viewDetailsRow: {
     flexDirection: 'row',
@@ -546,7 +520,6 @@ const styles = StyleSheet.create({
   },
   viewDetailsText: {
     fontSize: 13,
-    color: COLORS.PRIMARY,
     fontWeight: '600',
   },
   emptyContainer: {
@@ -559,13 +532,11 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
     marginTop: 16,
     marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 14,
-    color: '#999',
     textAlign: 'center',
     lineHeight: 20,
   },

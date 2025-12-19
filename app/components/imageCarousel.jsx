@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Dimensions, FlatList, Image, StyleSheet, View } from "react-native";
-import { COLORS } from '../../src/utils/constants';
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -62,15 +61,7 @@ export default function ImageCarousel() {
         )}
       />
 
-      {/* Dots indicator */}
-      <View style={styles.dotsContainer}>
-        {images.map((_, i) => (
-          <View
-            key={i}
-            style={[styles.dot, { opacity: i === activeIndex ? 1 : 0.3 }]}
-          />
-        ))}
-      </View>
+
     </View>
   );
 }
@@ -92,16 +83,9 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   dotsContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginTop: 12,
-    backgroundColor: 'transparent',
+    display: 'none',
   },
   dot: {
-    height: 8,
-    width: 8,
-    borderRadius: 4,
-    backgroundColor: COLORS.PRIMARY,
-    marginHorizontal: 4,
+    display: 'none',
   },
 });

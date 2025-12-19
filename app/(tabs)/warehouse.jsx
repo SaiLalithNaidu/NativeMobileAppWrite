@@ -14,15 +14,16 @@ import { useRouter } from 'expo-router';
 import { collection, getDocs } from 'firebase/firestore';
 import React, { useCallback, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    Alert,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
+import { useTheme } from '../../contexts/ThemeContext';
 import { db } from '../../lib/firebase';
 import WarehouseSkeleton from '../components/warehouse/WarehouseSkeleton';
 import { SimpleSalesAnalyticsService } from '../services/simpleSalesAnalyticsService';
@@ -30,14 +31,15 @@ import { SalesDataSeeder } from '../utils/salesDataSeeder';
 
 const WarehouseOverview = () => {
   const router = useRouter();
-  
+  const { theme } = useTheme();
+
   // State management
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [warehouseLoading, setWarehouseLoading] = useState(false);
   const [salesLoading, setSalesLoading] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState('today'); // today, week, month, year
-  
+
   // Data state
   const [warehouseStats, setWarehouseStats] = useState({
     totalProducts: 0,
@@ -47,7 +49,7 @@ const WarehouseOverview = () => {
     lowStockProducts: 0,
     totalStockValue: 0
   });
-  
+
   const [salesStats, setSalesStats] = useState({
     itemsSold: 0,
     totalOrders: 0,
@@ -57,7 +59,7 @@ const WarehouseOverview = () => {
 
   const [companies, setCompanies] = useState([]);
   const [selectedCompany, setSelectedCompany] = useState(null);
-  
+
   // Cache for sales data to reduce API calls
   const [salesCache, setSalesCache] = useState({});
 
@@ -78,7 +80,7 @@ const WarehouseOverview = () => {
           setLoading(false);
         }
       };
-      
+
       initializeData();
     }, [loadCompanies, loadWarehouseData])
   );
@@ -99,7 +101,7 @@ const WarehouseOverview = () => {
       try {
         setSalesLoading(true);
         let salesData;
-        
+
         switch (selectedPeriod) {
           case 'today':
             salesData = await SimpleSalesAnalyticsService.getTodaysSales(selectedCompany.id);
@@ -164,7 +166,7 @@ const WarehouseOverview = () => {
         id: doc.id,
         ...doc.data()
       }));
-      
+
       setCompanies(companyData);
       if (companyData.length > 0 && !selectedCompany) {
         setSelectedCompany(companyData[0]);
@@ -177,7 +179,7 @@ const WarehouseOverview = () => {
   const loadWarehouseData = useCallback(async () => {
     try {
       setWarehouseLoading(true);
-      
+
       // Get all products (or filter by company if selected)
       const productsRef = collection(db, 'products');
       const productsSnapshot = await getDocs(productsRef);
@@ -210,7 +212,7 @@ const WarehouseOverview = () => {
       const inStockProducts = inventory.filter(item => !item.isOutOfStock).length;
       const outOfStockProducts = inventory.filter(item => item.isOutOfStock).length;
       const lowStockProducts = inventory.filter(item => item.isLowStock && !item.isOutOfStock).length;
-      
+
       // Estimate stock value (using product prices)
       let totalStockValue = 0;
       inventory.forEach(invItem => {
@@ -250,7 +252,7 @@ const WarehouseOverview = () => {
     try {
       // Clear sales cache on refresh to ensure fresh data
       setSalesCache({});
-      
+
       await Promise.all([
         loadCompanies(),
         loadWarehouseData(),
@@ -277,14 +279,14 @@ const WarehouseOverview = () => {
             try {
               setRefreshing(true);
               console.log('🌱 Starting sample sales data generation...');
-              
+
               const result = await SalesDataSeeder.seedRealisticSalesData(
                 selectedCompany ? selectedCompany.id : null
               );
-              
+
               // Clear cache and refresh analytics after generating data
               setSalesCache({});
-              
+
               if (selectedCompany) {
                 // Trigger a fresh load by changing a state that will cause useEffect to run
                 setSalesLoading(true);
@@ -292,13 +294,13 @@ const WarehouseOverview = () => {
                   setSalesLoading(false);
                 }, 100);
               }
-              
+
               Alert.alert(
                 "Success!",
                 `Generated ${result.salesCreated} sales records over ${result.months} months. Check the sales analytics above!`,
                 [{ text: "OK" }]
               );
-              
+
             } catch (error) {
               console.error('Error generating sample sales data:', error);
               Alert.alert(
@@ -334,22 +336,22 @@ const WarehouseOverview = () => {
   }
 
   return (
-    <ScrollView 
-      style={styles.container}
+    <ScrollView
+      style={[styles.container, { backgroundColor: theme.background }]}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
       }
     >
       {/* Header */}
       <LinearGradient
-        colors={['#0080ff', '#0066cc', '#004d99']}
+        colors={[theme.primary, theme.primaryDark]}
         style={styles.header}
       >
         <View style={styles.headerContent}>
           <View style={styles.headerTop}>
             <View>
-              <Text style={styles.headerTitle}>Warehouse Overview</Text>
-              <Text style={styles.headerSubtitle}>Real-time inventory tracking</Text>
+              <Text style={[styles.headerTitle, { color: 'white' }]}>Warehouse Overview</Text>
+              <Text style={[styles.headerSubtitle, { color: 'rgba(255,255,255,0.8)' }]}>Real-time inventory tracking</Text>
             </View>
             <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh}>
               <FontAwesome5 name="sync-alt" size={20} color="white" />
@@ -359,69 +361,59 @@ const WarehouseOverview = () => {
       </LinearGradient>
 
       {/* Quick Actions - PhonePe Style Design */}
-      <View style={styles.quickActionsSection}>
+      <View style={[styles.quickActionsSection, { backgroundColor: theme.cardBackground }]}>
         <View style={styles.quickActionsHeader}>
-          <Text style={styles.quickActionsTitle}>Warehouse & Operations</Text>
+          <Text style={[styles.quickActionsTitle, { color: theme.text }]}>Warehouse & Operations</Text>
         </View>
-        
+
         <View style={styles.quickActionGrid}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.quickActionItem}
             onPress={() => router.push('/addStock')}
           >
-            <View style={styles.quickActionCircle}>
-              <FontAwesome5 name="plus" size={24} color="#8B5CF6" />
+            <View style={[styles.quickActionCircle, { backgroundColor: theme.iconBackground }]}>
+              <FontAwesome5 name="plus" size={24} color={theme.primary} />
             </View>
-            <Text style={styles.quickActionLabel}>Add Stock</Text>
+            <Text style={[styles.quickActionLabel, { color: theme.text }]}>Add Stock</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={styles.quickActionItem}
             onPress={() => {
               Alert.alert('Coming Soon', 'Inventory Reports feature will be available soon!');
             }}
           >
-            <View style={styles.quickActionCircle}>
-              <FontAwesome5 name="chart-bar" size={24} color="#8B5CF6" />
+            <View style={[styles.quickActionCircle, { backgroundColor: theme.iconBackground }]}>
+              <FontAwesome5 name="chart-bar" size={24} color={theme.primary} />
             </View>
-            <Text style={styles.quickActionLabel}>Inventory Report</Text>
+            <Text style={[styles.quickActionLabel, { color: theme.text }]}>Inventory Report</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={styles.quickActionItem}
             onPress={() => {
               Alert.alert('Stock Alerts', 'No critical stock alerts at the moment!');
             }}
           >
-            <View style={styles.quickActionCircle}>
-              <FontAwesome5 name="exclamation-triangle" size={24} color="#8B5CF6" />
+            <View style={[styles.quickActionCircle, { backgroundColor: theme.iconBackground }]}>
+              <FontAwesome5 name="exclamation-triangle" size={24} color={theme.primary} />
             </View>
-            <Text style={styles.quickActionLabel}>Stock Alerts</Text>
+            <Text style={[styles.quickActionLabel, { color: theme.text }]}>Stock Alerts</Text>
           </TouchableOpacity>
-          
-          {/* <TouchableOpacity 
-            style={styles.quickActionItem}
-            onPress={generateSampleSalesData}
-          >
-            <View style={styles.quickActionCircle}>
-              <FontAwesome5 name="database" size={24} color="#8B5CF6" />
-            </View>
-            <Text style={styles.quickActionLabel}>Sample Data</Text>
-          </TouchableOpacity> */}
         </View>
       </View>
 
       {/* Company Selector */}
       {companies.length > 1 && (
-        <View style={styles.companySelector}>
-          <Text style={styles.selectorLabel}>Select Company:</Text>
+        <View style={[styles.companySelector, { backgroundColor: theme.cardBackground }]}>
+          <Text style={[styles.selectorLabel, { color: theme.text }]}>Select Company:</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.companyList}>
             {companies.map(company => (
               <TouchableOpacity
                 key={company.id}
                 style={[
                   styles.companyChip,
-                  selectedCompany?.id === company.id && styles.selectedCompanyChip
+                  selectedCompany?.id === company.id && [styles.selectedCompanyChip, { backgroundColor: theme.primary }]
                 ]}
                 onPress={() => setSelectedCompany(company)}
               >
@@ -439,13 +431,13 @@ const WarehouseOverview = () => {
 
       {/* Main Stats Cards */}
       <View style={styles.statsSection}>
-        <Text style={styles.sectionTitle}>Warehouse Statistics</Text>
-        
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>Warehouse Statistics</Text>
+
         {/* Primary Stats Row */}
         <View style={styles.primaryStatsRow}>
           <View style={[styles.primaryStatCard, styles.totalProductsCard]}>
             <LinearGradient
-              colors={['#3b82f6', '#2563eb']}
+              colors={[theme.primary, theme.primaryDark]}
               style={styles.primaryStatGradient}
             >
               <View style={styles.primaryStatContent}>
@@ -453,22 +445,22 @@ const WarehouseOverview = () => {
                   <>
                     <ActivityIndicator size="large" color="white" style={styles.primaryStatIcon} />
                     <Text style={styles.primaryStatNumber}>--</Text>
-                    <Text style={styles.primaryStatLabel}>Loading...</Text>
+                    <Text style={[styles.primaryStatLabel, { color: 'rgba(255,255,255,0.9)' }]}>Loading...</Text>
                   </>
                 ) : (
                   <>
                     <FontAwesome5 name="boxes" size={32} color="white" style={styles.primaryStatIcon} />
                     <Text style={styles.primaryStatNumber}>{warehouseStats.totalProducts}</Text>
-                    <Text style={styles.primaryStatLabel}>Total Products</Text>
+                    <Text style={[styles.primaryStatLabel, { color: 'rgba(255,255,255,0.9)' }]}>Total Products</Text>
                   </>
                 )}
               </View>
             </LinearGradient>
           </View>
-          
+
           <View style={[styles.primaryStatCard, styles.totalStockCard]}>
             <LinearGradient
-              colors={['#8b5cf6', '#7c3aed']}
+              colors={[theme.success, '#10b981']}
               style={styles.primaryStatGradient}
             >
               <View style={styles.primaryStatContent}>
@@ -476,13 +468,13 @@ const WarehouseOverview = () => {
                   <>
                     <ActivityIndicator size="large" color="white" style={styles.primaryStatIcon} />
                     <Text style={styles.primaryStatNumber}>--</Text>
-                    <Text style={styles.primaryStatLabel}>Loading...</Text>
+                    <Text style={[styles.primaryStatLabel, { color: 'rgba(255,255,255,0.9)' }]}>Loading...</Text>
                   </>
                 ) : (
                   <>
                     <FontAwesome5 name="warehouse" size={32} color="white" style={styles.primaryStatIcon} />
                     <Text style={styles.primaryStatNumber}>{warehouseStats.totalStockQuantity}</Text>
-                    <Text style={styles.primaryStatLabel}>Items in Warehouse</Text>
+                    <Text style={[styles.primaryStatLabel, { color: 'rgba(255,255,255,0.9)' }]}>Items in Warehouse</Text>
                   </>
                 )}
               </View>
@@ -492,55 +484,55 @@ const WarehouseOverview = () => {
 
         {/* Secondary Stats Row */}
         <View style={styles.secondaryStatsRow}>
-          <View style={[styles.secondaryStatCard, styles.inStockCard]}>
+          <View style={[styles.secondaryStatCard, styles.inStockCard, { backgroundColor: theme.cardBackground }]}>
             <View style={styles.secondaryStatContent}>
               {(loading || warehouseLoading) ? (
                 <>
-                  <ActivityIndicator size="small" color="#059669" />
-                  <Text style={styles.secondaryStatNumber}>--</Text>
-                  <Text style={styles.secondaryStatLabel}>Loading...</Text>
+                  <ActivityIndicator size="small" color={theme.success} />
+                  <Text style={[styles.secondaryStatNumber, { color: theme.text }]}>--</Text>
+                  <Text style={[styles.secondaryStatLabel, { color: theme.textSecondary }]}>Loading...</Text>
                 </>
               ) : (
                 <>
-                  <FontAwesome5 name="check-circle" size={24} color="#059669" />
-                  <Text style={styles.secondaryStatNumber}>{warehouseStats.inStockProducts}</Text>
-                  <Text style={styles.secondaryStatLabel}>In Stock</Text>
+                  <FontAwesome5 name="check-circle" size={24} color={theme.success} />
+                  <Text style={[styles.secondaryStatNumber, { color: theme.text }]}>{warehouseStats.inStockProducts}</Text>
+                  <Text style={[styles.secondaryStatLabel, { color: theme.textSecondary }]}>In Stock</Text>
                 </>
               )}
             </View>
           </View>
-          
-          <View style={[styles.secondaryStatCard, styles.lowStockCard]}>
+
+          <View style={[styles.secondaryStatCard, styles.lowStockCard, { backgroundColor: theme.cardBackground }]}>
             <View style={styles.secondaryStatContent}>
               {(loading || warehouseLoading) ? (
                 <>
-                  <ActivityIndicator size="small" color="#d97706" />
-                  <Text style={styles.secondaryStatNumber}>--</Text>
-                  <Text style={styles.secondaryStatLabel}>Loading...</Text>
+                  <ActivityIndicator size="small" color={theme.warning} />
+                  <Text style={[styles.secondaryStatNumber, { color: theme.text }]}>--</Text>
+                  <Text style={[styles.secondaryStatLabel, { color: theme.textSecondary }]}>Loading...</Text>
                 </>
               ) : (
                 <>
-                  <FontAwesome5 name="exclamation-triangle" size={24} color="#d97706" />
-                  <Text style={styles.secondaryStatNumber}>{warehouseStats.lowStockProducts}</Text>
-                  <Text style={styles.secondaryStatLabel}>Low Stock</Text>
+                  <FontAwesome5 name="exclamation-triangle" size={24} color={theme.warning} />
+                  <Text style={[styles.secondaryStatNumber, { color: theme.text }]}>{warehouseStats.lowStockProducts}</Text>
+                  <Text style={[styles.secondaryStatLabel, { color: theme.textSecondary }]}>Low Stock</Text>
                 </>
               )}
             </View>
           </View>
-          
-          <View style={[styles.secondaryStatCard, styles.outOfStockCard]}>
+
+          <View style={[styles.secondaryStatCard, styles.outOfStockCard, { backgroundColor: theme.cardBackground }]}>
             <View style={styles.secondaryStatContent}>
               {(loading || warehouseLoading) ? (
                 <>
-                  <ActivityIndicator size="small" color="#dc2626" />
-                  <Text style={styles.secondaryStatNumber}>--</Text>
-                  <Text style={styles.secondaryStatLabel}>Loading...</Text>
+                  <ActivityIndicator size="small" color={theme.error} />
+                  <Text style={[styles.secondaryStatNumber, { color: theme.text }]}>--</Text>
+                  <Text style={[styles.secondaryStatLabel, { color: theme.textSecondary }]}>Loading...</Text>
                 </>
               ) : (
                 <>
-                  <FontAwesome5 name="times-circle" size={24} color="#dc2626" />
-                  <Text style={styles.secondaryStatNumber}>{warehouseStats.outOfStockProducts}</Text>
-                  <Text style={styles.secondaryStatLabel}>Out of Stock</Text>
+                  <FontAwesome5 name="times-circle" size={24} color={theme.error} />
+                  <Text style={[styles.secondaryStatNumber, { color: theme.text }]}>{warehouseStats.outOfStockProducts}</Text>
+                  <Text style={[styles.secondaryStatLabel, { color: theme.textSecondary }]}>Out of Stock</Text>
                 </>
               )}
             </View>
@@ -548,28 +540,28 @@ const WarehouseOverview = () => {
         </View>
 
         {/* Stock Value Card */}
-        <View style={styles.valueCard}>
+        <View style={[styles.valueCard, { backgroundColor: theme.cardBackground }]}>
           <View style={styles.valueHeader}>
-            <FontAwesome5 name="rupee-sign" size={20} color="#059669" />
-            <Text style={styles.valueTitle}>Total Stock Value</Text>
+            <FontAwesome5 name="rupee-sign" size={20} color={theme.success} />
+            <Text style={[styles.valueTitle, { color: theme.text }]}>Total Stock Value</Text>
           </View>
           {(loading || warehouseLoading) ? (
             <View style={styles.valueLoadingContainer}>
-              <ActivityIndicator size="small" color="#059669" />
-              <Text style={styles.valueAmount}>--</Text>
+              <ActivityIndicator size="small" color={theme.success} />
+              <Text style={[styles.valueAmount, { color: theme.text }]}>--</Text>
             </View>
           ) : (
-            <Text style={styles.valueAmount}>₹{warehouseStats.totalStockValue.toLocaleString()}</Text>
+            <Text style={[styles.valueAmount, { color: theme.primary }]}>₹{warehouseStats.totalStockValue.toLocaleString()}</Text>
           )}
-          <Text style={styles.valueSubtext}>Estimated inventory worth</Text>
+          <Text style={[styles.valueSubtext, { color: theme.textSecondary }]}>Estimated inventory worth</Text>
         </View>
       </View>
 
       {/* Sales Analytics Section */}
-      <View style={styles.salesSection}>
+      <View style={[styles.salesSection, { backgroundColor: theme.cardBackground }]}>
         <View style={styles.salesHeader}>
-          <Text style={styles.sectionTitle}>Sales Analytics</Text>
-          <Text style={styles.salesSubtitle}>Track items sold and availability</Text>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Sales Analytics</Text>
+          <Text style={[styles.salesSubtitle, { color: theme.textSecondary }]}>Track items sold and availability</Text>
         </View>
 
         {/* Period Selector */}
@@ -579,13 +571,13 @@ const WarehouseOverview = () => {
               key={period}
               style={[
                 styles.periodButton,
-                selectedPeriod === period && styles.activePeriodButton
+                selectedPeriod === period && [styles.activePeriodButton, { backgroundColor: theme.primary }]
               ]}
               onPress={() => setSelectedPeriod(period)}
             >
               <Text style={[
                 styles.periodButtonText,
-                selectedPeriod === period && styles.activePeriodButtonText
+                selectedPeriod === period && { color: 'white' }
               ]}>
                 {period.charAt(0).toUpperCase() + period.slice(1)}
               </Text>
@@ -597,45 +589,45 @@ const WarehouseOverview = () => {
         <View style={styles.salesStatsRow}>
           <View style={[styles.salesStatCard, styles.itemsSoldCard]}>
             <LinearGradient
-              colors={['#ef4444', '#dc2626']}
+              colors={[theme.error, '#991b1b']}
               style={styles.salesStatGradient}
             >
               {salesLoading ? (
                 <>
                   <ActivityIndicator size="large" color="white" style={styles.salesStatIcon} />
                   <Text style={styles.salesStatNumber}>--</Text>
-                  <Text style={styles.salesStatLabel}>Loading...</Text>
-                  <Text style={styles.salesStatPeriod}>({getPeriodLabel()})</Text>
+                  <Text style={[styles.salesStatLabel, { color: 'rgba(255,255,255,0.9)' }]}>Loading...</Text>
+                  <Text style={[styles.salesStatPeriod, { color: 'rgba(255,255,255,0.8)' }]}>({getPeriodLabel()})</Text>
                 </>
               ) : (
                 <>
                   <FontAwesome5 name="shopping-bag" size={28} color="white" style={styles.salesStatIcon} />
                   <Text style={styles.salesStatNumber}>{salesStats.itemsSold}</Text>
-                  <Text style={styles.salesStatLabel}>Items Sold</Text>
-                  <Text style={styles.salesStatPeriod}>({getPeriodLabel()})</Text>
+                  <Text style={[styles.salesStatLabel, { color: 'rgba(255,255,255,0.9)' }]}>Items Sold</Text>
+                  <Text style={[styles.salesStatPeriod, { color: 'rgba(255,255,255,0.8)' }]}>({getPeriodLabel()})</Text>
                 </>
               )}
             </LinearGradient>
           </View>
-          
+
           <View style={[styles.salesStatCard, styles.availableCard]}>
             <LinearGradient
-              colors={['#10b981', '#059669']}
+              colors={[theme.success, '#065f46']}
               style={styles.salesStatGradient}
             >
               {salesLoading ? (
                 <>
                   <ActivityIndicator size="large" color="white" style={styles.salesStatIcon} />
                   <Text style={styles.salesStatNumber}>--</Text>
-                  <Text style={styles.salesStatLabel}>Loading...</Text>
-                  <Text style={styles.salesStatPeriod}>(Current Stock)</Text>
+                  <Text style={[styles.salesStatLabel, { color: 'rgba(255,255,255,0.9)' }]}>Loading...</Text>
+                  <Text style={[styles.salesStatPeriod, { color: 'rgba(255,255,255,0.8)' }]}>(Current Stock)</Text>
                 </>
               ) : (
                 <>
                   <FontAwesome5 name="check-double" size={28} color="white" style={styles.salesStatIcon} />
                   <Text style={styles.salesStatNumber}>{Math.max(0, getAvailableStock())}</Text>
-                  <Text style={styles.salesStatLabel}>Still Available</Text>
-                  <Text style={styles.salesStatPeriod}>(Current Stock)</Text>
+                  <Text style={[styles.salesStatLabel, { color: 'rgba(255,255,255,0.9)' }]}>Still Available</Text>
+                  <Text style={[styles.salesStatPeriod, { color: 'rgba(255,255,255,0.8)' }]}>(Current Stock)</Text>
                 </>
               )}
             </LinearGradient>
@@ -646,20 +638,20 @@ const WarehouseOverview = () => {
         <View style={styles.additionalMetrics}>
           {salesLoading ? (
             <View style={styles.metricsLoadingContainer}>
-              <ActivityIndicator size="small" color="#6b7280" />
-              <Text style={styles.metricsLoadingText}>Loading sales metrics...</Text>
+              <ActivityIndicator size="small" color={theme.textSecondary} />
+              <Text style={[styles.metricsLoadingText, { color: theme.textSecondary }]}>Loading sales metrics...</Text>
             </View>
           ) : (
             <View style={styles.metricRow}>
               <View style={styles.metricItem}>
-                <FontAwesome5 name="chart-line" size={16} color="#6b7280" />
-                <Text style={styles.metricLabel}>Total Orders</Text>
-                <Text style={styles.metricValue}>{salesStats.totalOrders}</Text>
+                <FontAwesome5 name="chart-line" size={16} color={theme.textSecondary} />
+                <Text style={[styles.metricLabel, { color: theme.textSecondary }]}>Total Orders</Text>
+                <Text style={[styles.metricValue, { color: theme.text }]}>{salesStats.totalOrders}</Text>
               </View>
               <View style={styles.metricItem}>
-                <FontAwesome5 name="rupee-sign" size={16} color="#6b7280" />
-                <Text style={styles.metricLabel}>Revenue</Text>
-                <Text style={styles.metricValue}>₹{salesStats.totalRevenue.toLocaleString()}</Text>
+                <FontAwesome5 name="rupee-sign" size={16} color={theme.textSecondary} />
+                <Text style={[styles.metricLabel, { color: theme.textSecondary }]}>Revenue</Text>
+                <Text style={[styles.metricValue, { color: theme.primary }]}>₹{salesStats.totalRevenue.toLocaleString()}</Text>
               </View>
             </View>
           )}
@@ -668,20 +660,20 @@ const WarehouseOverview = () => {
 
       {/* Top Selling Products */}
       {salesStats.topSellingProducts.length > 0 && (
-        <View style={styles.topProductsSection}>
-          <Text style={styles.sectionTitle}>Top Selling Products ({getPeriodLabel()})</Text>
+        <View style={[styles.topProductsSection, { backgroundColor: theme.cardBackground }]}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Top Selling Products ({getPeriodLabel()})</Text>
           {salesStats.topSellingProducts.slice(0, 5).map((product, index) => (
-            <View key={product.productId} style={styles.topProductItem}>
-              <View style={styles.productRank}>
-                <Text style={styles.rankNumber}>{index + 1}</Text>
+            <View key={product.productId} style={[styles.topProductItem, { borderBottomColor: theme.border }]}>
+              <View style={[styles.productRank, { backgroundColor: theme.primary }]}>
+                <Text style={[styles.rankNumber, { color: 'white' }]}>{index + 1}</Text>
               </View>
               <View style={styles.productInfo}>
-                <Text style={styles.productTitle}>{product.productTitle}</Text>
-                <Text style={styles.productMetrics}>
+                <Text style={[styles.productTitle, { color: theme.text }]}>{product.productTitle}</Text>
+                <Text style={[styles.productMetrics, { color: theme.textSecondary }]}>
                   {product.totalQuantity} sold • ₹{product.totalRevenue.toLocaleString()} revenue
                 </Text>
               </View>
-              <FontAwesome5 name="trophy" size={16} color="#f59e0b" />
+              <FontAwesome5 name="trophy" size={16} color={theme.warning} />
             </View>
           ))}
         </View>
@@ -695,18 +687,15 @@ const WarehouseOverview = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#6b7280',
   },
   header: {
     paddingTop: 20,
@@ -740,16 +729,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   companySelector: {
-    backgroundColor: 'white',
     paddingVertical: 16,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
   },
   selectorLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
     marginBottom: 12,
   },
   companyList: {
@@ -758,17 +744,14 @@ const styles = StyleSheet.create({
   companyChip: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#f3f4f6',
     borderRadius: 20,
     marginRight: 12,
   },
   selectedCompanyChip: {
-    backgroundColor: '#0080ff',
   },
   companyChipText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#6b7280',
   },
   selectedCompanyChipText: {
     color: 'white',
@@ -779,7 +762,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#111827',
     marginBottom: 16,
   },
   primaryStatsRow: {
@@ -832,7 +814,6 @@ const styles = StyleSheet.create({
   },
   secondaryStatCard: {
     flex: 1,
-    backgroundColor: 'white',
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -852,7 +833,6 @@ const styles = StyleSheet.create({
   secondaryStatNumber: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#111827',
     marginTop: 8,
     marginBottom: 4,
     minHeight: 24,
@@ -860,11 +840,9 @@ const styles = StyleSheet.create({
   },
   secondaryStatLabel: {
     fontSize: 12,
-    color: '#6b7280',
     textAlign: 'center',
   },
   valueCard: {
-    backgroundColor: 'white',
     padding: 20,
     borderRadius: 16,
     shadowColor: '#000',
@@ -881,13 +859,11 @@ const styles = StyleSheet.create({
   valueTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
     marginLeft: 8,
   },
   valueAmount: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#059669',
     marginBottom: 4,
   },
   valueLoadingContainer: {
@@ -898,10 +874,8 @@ const styles = StyleSheet.create({
   },
   valueSubtext: {
     fontSize: 14,
-    color: '#6b7280',
   },
   salesSection: {
-    backgroundColor: 'white',
     margin: 20,
     marginTop: 0,
     padding: 20,
@@ -917,12 +891,10 @@ const styles = StyleSheet.create({
   },
   salesSubtitle: {
     fontSize: 14,
-    color: '#6b7280',
     marginTop: 4,
   },
   periodSelector: {
     flexDirection: 'row',
-    backgroundColor: '#f3f4f6',
     borderRadius: 12,
     padding: 4,
     marginBottom: 20,
@@ -934,7 +906,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   activePeriodButton: {
-    backgroundColor: 'white',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -944,10 +915,8 @@ const styles = StyleSheet.create({
   periodButtonText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#6b7280',
   },
   activePeriodButtonText: {
-    color: '#111827',
     fontWeight: '600',
   },
   salesStatsRow: {
@@ -990,7 +959,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   additionalMetrics: {
-    backgroundColor: '#f8fafc',
     borderRadius: 12,
     padding: 16,
   },
@@ -1004,17 +972,14 @@ const styles = StyleSheet.create({
   },
   metricLabel: {
     fontSize: 12,
-    color: '#6b7280',
     marginTop: 4,
     marginBottom: 2,
   },
   metricValue: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
   },
   topProductsSection: {
-    backgroundColor: 'white',
     marginHorizontal: 20,
     marginBottom: 20,
     padding: 20,
@@ -1030,13 +995,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
   },
   productRank: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#f3f4f6',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -1044,7 +1007,6 @@ const styles = StyleSheet.create({
   rankNumber: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#6b7280',
   },
   productInfo: {
     flex: 1,
@@ -1052,16 +1014,13 @@ const styles = StyleSheet.create({
   productTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#111827',
     marginBottom: 2,
   },
   productMetrics: {
     fontSize: 12,
-    color: '#6b7280',
   },
   // PhonePe Style Quick Actions
   quickActionsSection: {
-    backgroundColor: '#F5F5F7',
     marginHorizontal: 20,
     marginVertical: 16,
     padding: 20,
@@ -1081,7 +1040,6 @@ const styles = StyleSheet.create({
   quickActionsTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#1D1D1F',
   },
   viewAllButton: {
     paddingHorizontal: 4,
@@ -1090,7 +1048,6 @@ const styles = StyleSheet.create({
   viewAllText: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#8B5CF6',
   },
   quickActionGrid: {
     flexDirection: 'row',
@@ -1107,11 +1064,10 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: 'white',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
-    shadowColor: '#8B5CF6',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 4,
@@ -1120,7 +1076,6 @@ const styles = StyleSheet.create({
   quickActionLabel: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#1D1D1F',
     textAlign: 'center',
     lineHeight: 16,
     maxWidth: 80,
@@ -1134,7 +1089,6 @@ const styles = StyleSheet.create({
   },
   metricsLoadingText: {
     fontSize: 14,
-    color: '#6b7280',
     fontStyle: 'italic',
   },
 });

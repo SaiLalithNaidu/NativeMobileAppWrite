@@ -20,7 +20,7 @@ import {
     View
 } from 'react-native';
 import { useCart } from '../../contexts/CartContext';
-import { COLORS } from '../../src/utils/constants';
+import { useTheme } from '../../contexts/ThemeContext';
 import { BillSummary } from '../components/cart/BillSummary';
 import { CartItem } from '../components/cart/CartItem';
 import { EmptyCart } from '../components/cart/EmptyCart';
@@ -28,6 +28,7 @@ import { getCartSummary } from '../services/cartService';
 
 const CartScreen = () => {
   const router = useRouter();
+  const { theme } = useTheme();
   const {
     cartItems,
     addToCart,
@@ -39,7 +40,7 @@ const CartScreen = () => {
   const cartSummary = getCartSummary(cartItems);
 
   const renderCartItem = ({ item }) => (
-    <CartItem 
+    <CartItem
       item={item}
       onIncrease={addToCart}
       onDecrease={removeFromCart}
@@ -49,9 +50,9 @@ const CartScreen = () => {
   // Empty cart state
   if (cartItems.length === 0) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>My Cart</Text>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+        <View style={[styles.header, { backgroundColor: theme.cardBackground, borderBottomColor: theme.border }]}>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>My Cart</Text>
         </View>
         <EmptyCart />
       </SafeAreaView>
@@ -59,12 +60,12 @@ const CartScreen = () => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>My Cart</Text>
-        <TouchableOpacity onPress={clearCart} style={styles.clearButton}>
-          <FontAwesome5 name="trash" size={16} color={COLORS.ERROR} />
-          <Text style={styles.clearButtonText}>Clear</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <View style={[styles.header, { backgroundColor: theme.cardBackground, borderBottomColor: theme.border }]}>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>My Cart</Text>
+        <TouchableOpacity onPress={clearCart} style={[styles.clearButton, { backgroundColor: theme.iconBackground }]}>
+          <FontAwesome5 name="trash" size={16} color={theme.error} />
+          <Text style={[styles.clearButtonText, { color: theme.error }]}>Clear</Text>
         </TouchableOpacity>
       </View>
 
@@ -76,17 +77,17 @@ const CartScreen = () => {
         ListFooterComponent={<BillSummary summary={cartSummary} />}
       />
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { backgroundColor: theme.cardBackground, borderTopColor: theme.border }]}>
         <View style={styles.footerLeft}>
-          <Text style={styles.footerTotal}>₹{cartSummary.total.toFixed(2)}</Text>
-          <Text style={styles.footerSubtext}>{cartSummary.itemCount} items</Text>
+          <Text style={[styles.footerTotal, { color: theme.text }]}>₹{cartSummary.total.toFixed(2)}</Text>
+          <Text style={[styles.footerSubtext, { color: theme.textSecondary }]}>{cartSummary.itemCount} items</Text>
         </View>
-        <TouchableOpacity 
-          style={styles.checkoutButton}
+        <TouchableOpacity
+          style={[styles.checkoutButton, { backgroundColor: theme.primary }]}
           onPress={() => router.push('/checkout')}
         >
-          <Text style={styles.checkoutButtonText}>Proceed to Checkout</Text>
-          <FontAwesome5 name="arrow-right" size={16} color="white" />
+          <Text style={[styles.checkoutButtonText, { color: '#fff' }]}>Proceed to Checkout</Text>
+          <FontAwesome5 name="arrow-right" size={16} color="#fff" />
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -96,22 +97,18 @@ const CartScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: 'white',
     paddingHorizontal: 16,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
   },
   headerTitle: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#333',
   },
   clearButton: {
     flexDirection: 'row',
@@ -120,10 +117,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
-    backgroundColor: '#fff5f5',
   },
   clearButtonText: {
-    color: '#ff6347',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -157,11 +152,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: 'white',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
@@ -174,24 +167,20 @@ const styles = StyleSheet.create({
   footerTotal: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#333',
   },
   footerSubtext: {
     fontSize: 13,
-    color: '#666',
     marginTop: 2,
   },
   checkoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.PRIMARY,
     paddingHorizontal: 24,
     paddingVertical: 14,
     borderRadius: 10,
     gap: 10,
   },
   checkoutButtonText: {
-    color: 'white',
     fontSize: 16,
     fontWeight: '700',
   },

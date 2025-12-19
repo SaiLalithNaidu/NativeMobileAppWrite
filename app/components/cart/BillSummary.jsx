@@ -9,8 +9,10 @@
 import { FontAwesome5 } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 export const BillSummary = ({ summary }) => {
+  const { theme } = useTheme();
   if (!summary) return null;
 
   const {
@@ -25,64 +27,64 @@ export const BillSummary = ({ summary }) => {
   } = summary;
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Bill Details</Text>
-      
+    <View style={[styles.container, { backgroundColor: theme.cardBackground }]}>
+      <Text style={[styles.title, { color: theme.text }]}>Bill Details</Text>
+
       {/* Subtotal */}
       <View style={styles.billRow}>
-        <Text style={styles.billLabel}>
+        <Text style={[styles.billLabel, { color: theme.textSecondary }]}>
           Subtotal ({itemCount} {itemCount === 1 ? 'item' : 'items'})
         </Text>
-        <Text style={styles.billValue}>₹{subtotal.toFixed(2)}</Text>
+        <Text style={[styles.billValue, { color: theme.text }]}>₹{subtotal.toFixed(2)}</Text>
       </View>
 
       {/* GST */}
       <View style={styles.billRow}>
         <View style={styles.gstContainer}>
-          <Text style={styles.billLabel}>GST (18%)</Text>
-          <FontAwesome5 name="info-circle" size={12} color="#999" />
+          <Text style={[styles.billLabel, { color: theme.textSecondary }]}>GST (18%)</Text>
+          <FontAwesome5 name="info-circle" size={12} color={theme.textLight} />
         </View>
-        <Text style={styles.billValue}>₹{gst.toFixed(2)}</Text>
+        <Text style={[styles.billValue, { color: theme.text }]}>₹{gst.toFixed(2)}</Text>
       </View>
 
       {/* Delivery Charges */}
       <View style={styles.billRow}>
         <View style={styles.deliveryContainer}>
-          <Text style={styles.billLabel}>Delivery Charges</Text>
+          <Text style={[styles.billLabel, { color: theme.textSecondary }]}>Delivery Charges</Text>
           {hasFreeDelivery && (
-            <View style={styles.freeBadge}>
+            <View style={[styles.freeBadge, { backgroundColor: theme.success }]}>
               <Text style={styles.freeBadgeText}>FREE</Text>
             </View>
           )}
         </View>
-        <Text style={[styles.billValue, hasFreeDelivery && styles.strikethrough]}>
+        <Text style={[styles.billValue, hasFreeDelivery && styles.strikethrough, hasFreeDelivery && { color: theme.textSecondary }]}>
           ₹{hasFreeDelivery ? '40' : delivery.toFixed(2)}
         </Text>
       </View>
 
       {/* Free Delivery Tip */}
       {!hasFreeDelivery && amountForFreeDelivery > 0 && (
-        <View style={styles.deliveryTip}>
-          <FontAwesome5 name="info-circle" size={12} color="#ff9800" />
-          <Text style={styles.deliveryTipText}>
+        <View style={[styles.deliveryTip, { backgroundColor: theme.warning + '20' }]}>
+          <FontAwesome5 name="info-circle" size={12} color={theme.warning} />
+          <Text style={[styles.deliveryTipText, { color: theme.warning }]}>
             Add ₹{amountForFreeDelivery.toFixed(2)} more for FREE delivery
           </Text>
         </View>
       )}
 
-      <View style={styles.divider} />
+      <View style={[styles.divider, { backgroundColor: theme.border }]} />
 
       {/* Total */}
       <View style={styles.totalRow}>
-        <Text style={styles.totalLabel}>Total Amount</Text>
-        <Text style={styles.totalValue}>₹{total.toFixed(2)}</Text>
+        <Text style={[styles.totalLabel, { color: theme.text }]}>Total Amount</Text>
+        <Text style={[styles.totalValue, { color: theme.primary }]}>₹{total.toFixed(2)}</Text>
       </View>
 
       {/* Savings */}
       {savings > 0 && (
-        <View style={styles.savingsContainer}>
-          <FontAwesome5 name="check-circle" size={14} color="#28a745" />
-          <Text style={styles.savingsText}>
+        <View style={[styles.savingsContainer, { backgroundColor: theme.primary + '15' }]}>
+          <FontAwesome5 name="check-circle" size={14} color={theme.success} />
+          <Text style={[styles.savingsText, { color: theme.success }]}>
             You&apos;re saving ₹{savings.toFixed(2)} on this order!
           </Text>
         </View>
@@ -93,7 +95,6 @@ export const BillSummary = ({ summary }) => {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: 'white',
     borderRadius: 12,
     padding: 16,
     marginTop: 8,
@@ -106,7 +107,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#333',
     marginBottom: 16,
   },
   billRow: {
@@ -117,12 +117,10 @@ const styles = StyleSheet.create({
   },
   billLabel: {
     fontSize: 15,
-    color: '#666',
   },
   billValue: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#333',
   },
   gstContainer: {
     flexDirection: 'row',
@@ -135,7 +133,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   freeBadge: {
-    backgroundColor: '#28a745',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
@@ -147,12 +144,10 @@ const styles = StyleSheet.create({
   },
   strikethrough: {
     textDecorationLine: 'line-through',
-    color: '#999',
   },
   deliveryTip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff8e1',
     padding: 10,
     borderRadius: 8,
     marginBottom: 12,
@@ -161,11 +156,9 @@ const styles = StyleSheet.create({
   deliveryTipText: {
     flex: 1,
     fontSize: 13,
-    color: '#f57c00',
   },
   divider: {
     height: 1,
-    backgroundColor: '#e0e0e0',
     marginVertical: 12,
   },
   totalRow: {
@@ -177,17 +170,14 @@ const styles = StyleSheet.create({
   totalLabel: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#333',
   },
   totalValue: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#28a745',
   },
   savingsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f0f9ff',
     padding: 10,
     borderRadius: 8,
     marginTop: 12,
@@ -196,7 +186,6 @@ const styles = StyleSheet.create({
   savingsText: {
     flex: 1,
     fontSize: 13,
-    color: '#28a745',
     fontWeight: '600',
   },
 });

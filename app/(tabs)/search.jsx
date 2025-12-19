@@ -19,7 +19,7 @@ import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from "react";
 import { FlatList, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useCart } from '../../contexts/CartContext';
-import { COLORS } from '../../src/utils/constants';
+import { useTheme } from '../../contexts/ThemeContext';
 import { SkeletonProductGrid } from '../components/SkeletonLoader';
 import { useSearch } from '../hooks/useSearch';
 import { InventoryService } from '../services/inventoryService';
@@ -27,7 +27,8 @@ import { InventoryService } from '../services/inventoryService';
 const Search = () => {
   const router = useRouter();
   const { addToCart, removeFromCart, getItemQuantity } = useCart();
-  
+  const { theme } = useTheme();
+
   // Custom hook handles all search logic
   const {
     searchQuery,
@@ -57,13 +58,13 @@ const Search = () => {
   const loadStockStatus = useCallback(async (productList) => {
     try {
       setStockLoading(true);
-      
+
       // Extract product IDs
       const productIds = productList.map(p => p.id);
-      
+
       // Use batch inventory fetch (single optimized query)
       const inventoryData = await InventoryService.getBatchProductInventory(productIds);
-      
+
       // Fill in missing products with out-of-stock data
       const stockData = {};
       productList.forEach(product => {
@@ -74,7 +75,7 @@ const Search = () => {
           lowStockThreshold: 5
         };
       });
-      
+
       setStockStatus(stockData);
       setStockLoading(false);
     } catch (error) {
@@ -104,7 +105,7 @@ const Search = () => {
             <View style={[styles.searchInput, { backgroundColor: '#e0e0e0' }]} />
           </View>
         </View>
-        
+
         {/* Product Grid Skeleton */}
         <SkeletonProductGrid count={6} />
       </View>
@@ -114,9 +115,9 @@ const Search = () => {
   // Error state
   if (error) {
     return (
-      <View style={styles.center}>
-  <FontAwesome5 name="exclamation-circle" size={48} color={COLORS.PRIMARY} />
-        <Text style={{ marginTop: 16, color: '#666', textAlign: 'center', paddingHorizontal: 20 }}>
+      <View style={[styles.center, { backgroundColor: theme.background }]}>
+        <FontAwesome5 name="exclamation-circle" size={48} color={theme.primary} />
+        <Text style={[{ marginTop: 16, textAlign: 'center', paddingHorizontal: 20 }, { color: theme.textSecondary }]}>
           {error}
         </Text>
       </View>
@@ -125,14 +126,14 @@ const Search = () => {
 
   // Render search history item
   const renderHistoryItem = ({ item }) => (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={styles.historyItem}
       onPress={() => handleSearchFromHistory(item)}
       activeOpacity={0.7}
     >
-      <FontAwesome5 name="history" size={16} color="#666" />
-      <Text style={styles.historyText}>{item}</Text>
-      <FontAwesome5 name="arrow-up-left" size={14} color="#999" />
+      <FontAwesome5 name="history" size={16} color={theme.textSecondary} />
+      <Text style={[styles.historyText, { color: theme.text }]}>{item}</Text>
+      <FontAwesome5 name="arrow-up-left" size={14} color={theme.textLight} />
     </TouchableOpacity>
   );
 
@@ -141,57 +142,57 @@ const Search = () => {
     const quantity = getItemQuantity(item.id);
     const stock = stockStatus[item.id];
     const isOutOfStock = stock?.isOutOfStock || stock?.quantity === 0;
-    
+
     // Show out of stock badge
     if (isOutOfStock) {
       return (
-        <View style={styles.outOfStockBadge}>
-          <Text style={styles.outOfStockText}>OUT OF STOCK</Text>
+        <View style={[styles.outOfStockBadge, { backgroundColor: theme.error }]}>
+          <Text style={[styles.outOfStockText, { color: '#fff' }]}>OUT OF STOCK</Text>
         </View>
       );
     }
-    
+
     if (quantity === 0) {
       return (
-        <TouchableOpacity 
-          style={styles.addToCartButton}
+        <TouchableOpacity
+          style={[styles.addToCartButton, { backgroundColor: theme.primary }]}
           onPress={() => addToCart(item)}
           activeOpacity={0.8}
         >
-          <Text style={styles.addToCartText}>ADD TO CART</Text>
+          <Text style={[styles.addToCartText, { color: '#fff' }]}>ADD TO CART</Text>
         </TouchableOpacity>
       );
     }
-    
+
     return (
-      <View style={styles.quantityControls}>
-        <TouchableOpacity 
-          style={styles.quantityButton}
+      <View style={[styles.quantityControls, { backgroundColor: theme.iconBackground }]}>
+        <TouchableOpacity
+          style={[styles.quantityButton, { backgroundColor: theme.primary }]}
           onPress={() => removeFromCart(item.id)}
           activeOpacity={0.8}
         >
-          <FontAwesome5 name="minus" size={12} color="white" />
+          <FontAwesome5 name="minus" size={12} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.quantityText}>{quantity}</Text>
-        <TouchableOpacity 
-          style={styles.quantityButton}
+        <Text style={[styles.quantityText, { color: theme.text }]}>{quantity}</Text>
+        <TouchableOpacity
+          style={[styles.quantityButton, { backgroundColor: theme.primary }]}
           onPress={() => addToCart(item)}
           activeOpacity={0.8}
         >
-          <FontAwesome5 name="plus" size={12} color="white" />
+          <FontAwesome5 name="plus" size={12} color="#fff" />
         </TouchableOpacity>
       </View>
     );
   };
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: '#f5f5f5' }}>
-      <View style={styles.searchContainer}>
-        <FontAwesome5 name="search" size={20} color="#999" style={styles.searchIcon} />
-        <TextInput 
-          placeholder="Search products…" 
-          style={styles.searchInput}
-          placeholderTextColor="#999"
+    <ScrollView style={[styles.container, { backgroundColor: theme.background }]}>
+      <View style={[styles.searchContainer, { backgroundColor: theme.cardBackground, borderColor: theme.border }]}>
+        <FontAwesome5 name="search" size={20} color={theme.textLight} style={styles.searchIcon} />
+        <TextInput
+          placeholder="Search products…"
+          style={[styles.searchInput, { color: theme.text }]}
+          placeholderTextColor={theme.textLight}
           value={searchQuery}
           onChangeText={handleSearch}
           autoCorrect={false}
@@ -199,22 +200,22 @@ const Search = () => {
           returnKeyType="search"
         />
         {searchQuery ? (
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={() => handleSearch('')}
             style={styles.clearButton}
           >
-            <FontAwesome5 name="times" size={16} color="#999" />
+            <FontAwesome5 name="times" size={16} color={theme.textLight} />
           </TouchableOpacity>
         ) : null}
       </View>
 
       {/* Show search history when no search query */}
       {!searchQuery && searchHistory.length > 0 ? (
-        <View style={styles.historyContainer}>
+        <View style={[styles.historyContainer, { backgroundColor: theme.cardBackground }]}>
           <View style={styles.historyHeader}>
-            <Text style={styles.historyTitle}>Recent Searches</Text>
-            <TouchableOpacity onPress={clearSearchHistory} style={styles.clearHistoryButton}>
-              <Text style={styles.clearHistoryText}>Clear All</Text>
+            <Text style={[styles.historyTitle, { color: theme.text }]}>Recent Searches</Text>
+            <TouchableOpacity onPress={clearSearchHistory} style={[styles.clearHistoryButton, { backgroundColor: theme.iconBackground }]}>
+              <Text style={[styles.clearHistoryText, { color: theme.primary }]}>Clear All</Text>
             </TouchableOpacity>
           </View>
           <FlatList
@@ -234,17 +235,17 @@ const Search = () => {
           scrollEnabled={false}
           ListHeaderComponent={() => (
             <View style={styles.headerContainer}>
-              <Text style={styles.headerTitle}>
+              <Text style={[styles.headerTitle, { color: theme.text }]}>
                 {searchQuery ? `Results for "${searchQuery}"` : 'Search Products'}
               </Text>
-              <Text style={styles.headerSubtitle}>
+              <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>
                 {results.length} result{results.length === 1 ? '' : 's'}
               </Text>
             </View>
           )}
           renderItem={({ item }) => (
-            <View style={styles.productCard}>
-              <TouchableOpacity 
+            <View style={[styles.productCard, { backgroundColor: theme.cardBackground }]}>
+              <TouchableOpacity
                 onPress={() => handleProductPress(item)}
                 activeOpacity={0.8}
                 style={styles.productCardTouchable}
@@ -252,26 +253,26 @@ const Search = () => {
                 {item.imageUrl ? (
                   <Image source={{ uri: item.imageUrl }} style={styles.productImage} resizeMode="cover" />
                 ) : (
-                  <View style={[styles.productImage, { justifyContent: 'center', alignItems: 'center' }]}>
-                    <FontAwesome5 name="image" size={28} color="#bbb" />
+                  <View style={[styles.productImage, { justifyContent: 'center', alignItems: 'center', backgroundColor: theme.iconBackground }]}>
+                    <FontAwesome5 name="image" size={28} color={theme.textLight} />
                   </View>
                 )}
                 <View style={styles.productCardInfo}>
-                  <Text style={styles.productName} numberOfLines={2}>{item.title || 'Unnamed Product'}</Text>
-                  <Text style={styles.metaText} numberOfLines={2}>
+                  <Text style={[styles.productName, { color: theme.text }]} numberOfLines={2}>{item.title || 'Unnamed Product'}</Text>
+                  <Text style={[styles.metaText, { color: theme.textSecondary }]} numberOfLines={2}>
                     {companyMap.get(item.companyId) || 'Unknown Company'}
                     {' \u2022 '}
                     {categoryMap.get(item.categoryId) || 'Unknown Category'}
                   </Text>
                   <View style={styles.priceContainer}>
                     {item.originalPrice ? (
-                      <Text style={styles.originalPrice}>₹{item.originalPrice}</Text>
+                      <Text style={[styles.originalPrice, { color: theme.textLight }]}>₹{item.originalPrice}</Text>
                     ) : null}
-                    <Text style={styles.price}>₹{item.price || 0}</Text>
+                    <Text style={[styles.price, { color: theme.primary }]}>₹{item.price || 0}</Text>
                   </View>
                 </View>
               </TouchableOpacity>
-              
+
               {/* Add to Cart Controls */}
               <View style={styles.cartControlsContainer}>
                 {renderCartControls(item)}
@@ -281,9 +282,9 @@ const Search = () => {
           contentContainerStyle={styles.gridContainer}
           ListEmptyComponent={
             searchQuery ? (
-              <Text style={styles.emptyText}>{`No products found for "${searchQuery}"`}</Text>
+              <Text style={[styles.emptyText, { color: theme.textSecondary }]}>{`No products found for "${searchQuery}"`}</Text>
             ) : (
-              <Text style={styles.emptyText}>Type to search products</Text>
+              <Text style={[styles.emptyText, { color: theme.textSecondary }]}>Type to search products</Text>
             )
           }
         />
@@ -293,22 +294,23 @@ const Search = () => {
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    paddingBottom: 60,
+  },
   center: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     height: 45,
-    borderColor: '#ddd',
     borderWidth: 1,
     borderRadius: 12,
     paddingHorizontal: 12,
     margin: 16,
-    backgroundColor: 'white',
   },
   searchIcon: {
     marginRight: 8,
@@ -320,19 +322,17 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     marginBottom: 12,
+    paddingHorizontal: 16,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
     marginBottom: 4,
   },
   headerSubtitle: {
     fontSize: 13,
-    color: '#666',
   },
   productItem: {
-    backgroundColor: 'white',
     padding: 12,
     marginBottom: 12,
     borderRadius: 8,
@@ -347,7 +347,6 @@ const styles = StyleSheet.create({
     height: 140,
     borderRadius: 8,
     marginBottom: 10,
-    backgroundColor: '#eee',
   },
   productInfo: {
     flex: 1,
@@ -355,12 +354,10 @@ const styles = StyleSheet.create({
   productName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
     marginBottom: 4,
   },
   metaText: {
     fontSize: 12,
-    color: '#777',
     marginBottom: 6,
     flexWrap: 'wrap',
     width: '100%',
@@ -368,7 +365,6 @@ const styles = StyleSheet.create({
   },
   descriptionText: {
     fontSize: 13,
-    color: '#666',
     marginBottom: 6,
   },
   priceContainer: {
@@ -379,16 +375,13 @@ const styles = StyleSheet.create({
   price: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: COLORS.PRIMARY,
   },
   originalPrice: {
     fontSize: 14,
-    color: '#999',
     textDecorationLine: 'line-through',
   },
   emptyText: {
     textAlign: 'center',
-    color: '#666',
     marginTop: 24,
   },
   // Grid specific styles
@@ -399,10 +392,10 @@ const styles = StyleSheet.create({
   gridRow: {
     justifyContent: 'space-between',
     marginBottom: 12,
+    paddingHorizontal: 16,
   },
   productCard: {
     width: '48%',
-    backgroundColor: 'white',
     borderRadius: 10,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -424,8 +417,6 @@ const styles = StyleSheet.create({
   },
   // Search History Styles
   historyContainer: {
-    flex: 1,
-    backgroundColor: 'white',
     marginHorizontal: 16,
     marginTop: 8,
     borderRadius: 12,
@@ -441,17 +432,14 @@ const styles = StyleSheet.create({
   historyTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
   },
   clearHistoryButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
-    backgroundColor: '#f0f0f0',
   },
   clearHistoryText: {
     fontSize: 14,
-    color: '#666',
     fontWeight: '500',
   },
   historyList: {
@@ -465,28 +453,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 8,
     marginBottom: 4,
-    backgroundColor: '#f8f9fa',
   },
   historyText: {
     flex: 1,
     fontSize: 16,
-    color: '#333',
     marginLeft: 12,
   },
   // Cart Controls Styles
   cartControlsContainer: {
     paddingHorizontal: 10,
     paddingBottom: 10,
+    borderTopWidth: 1,
   },
   addToCartButton: {
-    backgroundColor: COLORS.PRIMARY,
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 6,
     alignItems: 'center',
   },
   addToCartText: {
-    color: 'white',
     fontSize: 12,
     fontWeight: '600',
   },
@@ -495,9 +480,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
+    borderRadius: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
   },
   quantityButton: {
-    backgroundColor: COLORS.PRIMARY,
     width: 28,
     height: 28,
     borderRadius: 14,
@@ -507,19 +494,16 @@ const styles = StyleSheet.create({
   quantityText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
     minWidth: 24,
     textAlign: 'center',
   },
   outOfStockBadge: {
-    backgroundColor: '#FFE5E5',
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 6,
     alignItems: 'center',
   },
   outOfStockText: {
-    color: '#D32F2F',
     fontSize: 12,
     fontWeight: '600',
   },

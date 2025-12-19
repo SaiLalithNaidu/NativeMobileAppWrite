@@ -4,15 +4,15 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-    ActivityIndicator,
-    FlatList,
-    Image,
-    RefreshControl,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  FlatList,
+  Image,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { db } from '../lib/firebase';
 import { COLORS } from '../src/utils/constants';
@@ -20,12 +20,12 @@ import { COLORS } from '../src/utils/constants';
 const AdminProductsScreen = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
-  
+
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   // Extract simple params
   const { companyId, companyName, categoryId, categoryName } = params;
 
@@ -39,7 +39,7 @@ const AdminProductsScreen = () => {
       console.log('🔍 Fetching products with:', { companyId, categoryId });
       const productsRef = collection(db, 'products');
       const q = query(
-        productsRef, 
+        productsRef,
         where('companyId', '==', companyId),
         where('categoryId', '==', categoryId)
       );
@@ -88,7 +88,7 @@ const AdminProductsScreen = () => {
     }
 
     const query = searchQuery.toLowerCase().trim();
-    return products.filter(product => 
+    return products.filter(product =>
       product.title?.toLowerCase().includes(query) ||
       product.description?.toLowerCase().includes(query) ||
       product.price?.toString().includes(query)
@@ -112,7 +112,7 @@ const AdminProductsScreen = () => {
   const renderProductItemGrid = ({ item }) => (
     <View style={styles.gridItem}>
       {item.imageUrl ? (
-        <Image 
+        <Image
           source={{ uri: item.imageUrl }}
           style={styles.gridImage}
           resizeMode="cover"
@@ -137,28 +137,28 @@ const AdminProductsScreen = () => {
           )}
           <Text style={styles.gridPrice}>₹{item.price || 0}</Text>
         </View>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.gridEditButton}
           onPress={() => handleEditProduct(item)}
         >
           <FontAwesome5 name="edit" size={14} color="white" />
           <Text style={styles.gridEditButtonText}>Edit</Text>
         </TouchableOpacity>
-      </View>
-    </View>
+      </View >
+    </View >
   );
 
   if (loading) {
     return (
       <>
-        <Stack.Screen 
+        <Stack.Screen
           options={{
             headerShown: true,
             headerTitle: categoryName && categoryName !== 'undefined' ? categoryName : 'Products',
             headerTitleStyle: { fontSize: 18, fontWeight: 'bold' },
             headerBackTitle: 'Back',
             headerStyle: { backgroundColor: '#f8f9fa' },
-          }} 
+          }}
         />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={COLORS.PRIMARY} />
@@ -170,14 +170,14 @@ const AdminProductsScreen = () => {
 
   return (
     <>
-      <Stack.Screen 
+      <Stack.Screen
         options={{
           headerShown: true,
           headerTitle: categoryName && categoryName !== 'undefined' ? categoryName : 'Products',
           headerTitleStyle: { fontSize: 18, fontWeight: 'bold' },
           headerBackTitle: 'Back',
           headerStyle: { backgroundColor: '#f8f9fa' },
-        }} 
+        }}
       />
       <View style={styles.container}>
         {/* Admin Header */}
@@ -210,7 +210,7 @@ const AdminProductsScreen = () => {
             returnKeyType="search"
           />
           {searchQuery.length > 0 && (
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => setSearchQuery('')}
               style={styles.clearButton}
             >
@@ -238,13 +238,13 @@ const AdminProductsScreen = () => {
             <View style={styles.emptyContainer}>
               <FontAwesome5 name={searchQuery ? "search" : "inbox"} size={60} color="#ccc" />
               <Text style={styles.emptyText}>
-                {searchQuery 
-                  ? `No products found for "${searchQuery}"` 
+                {searchQuery
+                  ? `No products found for "${searchQuery}"`
                   : "No products found in this category"}
               </Text>
               <Text style={styles.emptySubtext}>
-                {searchQuery 
-                  ? "Try a different search term" 
+                {searchQuery
+                  ? "Try a different search term"
                   : "Add products using the Admin Panel"}
               </Text>
             </View>
